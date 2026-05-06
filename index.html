@@ -1491,6 +1491,10 @@ const RuleEngine = {
       level = 'verhoogd risico (MINS-criterium)';
       const order = ['green','amber','orange','red'];
       if (order.indexOf('orange') > order.indexOf(color)) color = 'orange';
+      // MINS-specifieke uitkomstdata (VISION studie / Mol 2024, H2)
+      // Ongeacht absolute piekwaarde: ≥20% stijging = verhoogd 30-dgs en 1-jr risico
+      flags.push('MINS-uitkomst: 30-dgs MACE ~9.8%, 1-jr mortaliteit verhoogd ongeacht absolute piekwaarde | VISION studie (N=15.065) / Mol 2024, H2');
+      flags.push('MINS is in >90% van gevallen asymptomatisch — klinische beoordeling essentieel (Devereaux 2017, JAMA)');
     }
 
     // Trend (last two available values) — only when delta criterion not already dominant
@@ -1575,25 +1579,34 @@ const RuleEngine = {
 
     // Troponin-driven recommendations
     if (troponin.peak !== null) {
-      if (troponin.peak >= 150 || (troponin.peak >= 50 && troponin.trend === 'stijgend')) {
-        recs.push({ priority: 'urgent', text: 'Overweeg onmiddellijk cardiologieconsult — piekwaarde troponine significant verhoogd' });
+
+      // MINS-protocol gaat vóór absolute drempelwaarden
+      if (troponin.minsCriteriumMet) {
+        recs.push({ priority: 'urgent', text: 'MINS vastgesteld: informeer cardioloog binnen 24 uur — MINS is in >90% asymptomatisch maar verhoogt 30-dgs MACE significant (VISION studie)' });
+        recs.push({ priority: 'urgent', text: 'Verricht serieel ECG (dag 1, dag 2, dag 3) — sluit ischemie/new LBBB uit' });
+        recs.push({ priority: 'urgent', text: 'Herhaal troponinebepaling elke 24u tot dalende trend ≤2 opeenvolgende metingen' });
+        recs.push({ priority: 'hoog', text: 'Overweeg transthoracale echocardiografie bij aanhoudende stijging of hemodynamische instabiliteit' });
+        recs.push({ priority: 'hoog', text: 'Beoordeel medicatielijst: aspirine/anticoagulantia heropstarten conform cardiologieadvies' });
+        recs.push({ priority: 'hoog', text: 'Documenteer MINS in ontslagbrief — verhoogd risico op MACE blijft aanwezig tot 1 jaar postoperatief (Mol 2024, H2)' });
+        upgrade('orange');
+      } else if (troponin.peak >= 150 || (troponin.peak >= 50 && troponin.trend === 'stijgend')) {
+        recs.push({ priority: 'urgent', text: 'Overweeg onmiddellijk cardiologieconsult — piekwaarde troponine significant verhoogd (≥150 ng/L)' });
         recs.push({ priority: 'urgent', text: 'Herhaal troponinebepaling binnen 4–6 uur' });
-        recs.push({ priority: 'urgent', text: 'Verricht klinische beoordeling' });
-        recs.push({ priority: 'urgent', text: 'Overweeg 12-kanaals ECG' });
+        recs.push({ priority: 'urgent', text: 'Verricht 12-kanaals ECG en klinische beoordeling' });
+        recs.push({ priority: 'urgent', text: 'Overweeg transthoracale echocardiografie' });
         upgrade('red');
       } else if (troponin.peak >= 50) {
-        recs.push({ priority: 'hoog', text: 'Herhaal troponinebepaling dag 2 en dag 3' });
-        recs.push({ priority: 'hoog', text: 'Verricht klinische beoordeling van cardiale symptomen' });
-        recs.push({ priority: 'hoog', text: 'Overweeg ECG' });
-        recs.push({ priority: 'hoog', text: 'Overweeg cardiologieconsult' });
+        recs.push({ priority: 'hoog', text: 'Herhaal troponinebepaling dag 2 en dag 3 — serieel patroon bepalend voor MINS-classificatie' });
+        recs.push({ priority: 'hoog', text: 'Verricht klinische beoordeling op cardiale symptomen (pijn, dyspnoe, ritmestoornissen)' });
+        recs.push({ priority: 'hoog', text: 'Verricht ECG en overweeg cardiologieconsult' });
         upgrade('orange');
       } else if (troponin.peak >= 14) {
-        recs.push({ priority: 'matig', text: 'Herhaal troponinebepaling dag 2' });
-        recs.push({ priority: 'matig', text: 'Overweeg ECG bij nieuwe symptomen' });
+        recs.push({ priority: 'matig', text: 'Herhaal troponinebepaling dag 2 — trend bepaalt of MINS-criterium van toepassing is' });
+        recs.push({ priority: 'matig', text: 'Overweeg ECG bij nieuwe klachten; beoordeel preop baseline als referentie' });
         upgrade('amber');
       }
     } else {
-      recs.push({ priority: 'matig', text: 'Start troponinebepaling dag 0 en dag 1 conform protocol' });
+      recs.push({ priority: 'matig', text: 'Start troponinebepaling dag 0 en dag 1 conform protocol — preop baseline essentieel voor MINS-detectie' });
       upgrade('amber');
     }
 
@@ -1612,8 +1625,10 @@ const RuleEngine = {
 
     // Baseline risk — follow-up planning
     if (baseline.level === 'hoog' || baseline.level === 'verhoogd') {
-      if (troponin.peak !== null && troponin.peak >= 14) {
-        recs.push({ priority: 'hoog', text: 'Plan cardiologische follow-up na ontslag' });
+      if (troponin.minsCriteriumMet) {
+        recs.push({ priority: 'urgent', text: 'Plan cardiologische polikliniek binnen 4–6 weken na ontslag — MINS verhoogt 1-jr MACE risico ongeacht absolute piekwaarde (Mol 2024, H2)' });
+      } else if (troponin.peak !== null && troponin.peak >= 14) {
+        recs.push({ priority: 'hoog', text: 'Plan cardiologische follow-up binnen 3 maanden na ontslag' });
       } else {
         recs.push({ priority: 'matig', text: 'Overweeg cardiologische follow-up na ontslag bij hoog baselinerisico' });
       }
@@ -1915,15 +1930,17 @@ const UI = {
       verhoogd: '1-jr MACE 10.4%',
       kritisch: '1-jr MACE 40.6%, mortaliteit 46.5%'
     };
-    const getMolOutcomeLine = (peak) => {
+    const getMolOutcomeLine = (peak, minsCriteriumMet) => {
       if (peak === null) return '';
+      // Bij MINS-positief: VISION-data leidend, ongeacht absolute piekwaarde
+      if (minsCriteriumMet) return '30-dgs MACE ~9.8%, 1-jr mortaliteit verhoogd | VISION studie (N=15.065) / Mol 2024, H2';
       if (peak < 14) return molOutcomeMap.normaal;
       if (peak < 50) return molOutcomeMap.aandacht;
       if (peak < 150) return molOutcomeMap.verhoogd;
       return molOutcomeMap.kritisch;
     };
     const troponinLine = troponin.peak !== null
-      ? `hs-TnT piekwaarde ${troponin.peak} ng/L (${troponin.level}${troponin.trend ? ', ' + (trendMap[troponin.trend] || troponin.trend) : ''}) — ${getMolOutcomeLine(troponin.peak)} (Mol 2024, H6; N=3085)`
+      ? `hs-TnT piekwaarde ${troponin.peak} ng/L (${troponin.level}${troponin.trend ? ', ' + (trendMap[troponin.trend] || troponin.trend) : ''}) — ${getMolOutcomeLine(troponin.peak, troponin.minsCriteriumMet)} (Mol 2024, H6; N=3085)`
       : 'Troponinebepalingen nog niet ingevoerd';
 
     const hemoLine = hemodynamic.flags.length > 0
