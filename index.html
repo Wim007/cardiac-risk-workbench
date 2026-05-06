@@ -1438,13 +1438,13 @@ const RuleEngine = {
   evaluateTroponinRisk(patient) {
     // Dynamic array — supports 1–30 configured monitoring days
     const monDays = patient.monitoring.days || [];
-    const presentValues = monDays
-      .map(d => d?.troponin)
+    const rawValues = monDays.map(d => d?.troponin); // alle waarden incl. null
+    const presentValues = rawValues
       .filter(v => v !== null && v !== undefined && v !== '')
       .map(Number);
 
     if (presentValues.length === 0) {
-      return { level: 'geen data', color: 'gray', peak: null, trend: null, flags: [], presentValues: [] };
+      return { level: 'geen data', color: 'gray', peak: null, trend: null, flags: [], presentValues: [], rawValues };
     }
 
     const peak = Math.max(...presentValues);
