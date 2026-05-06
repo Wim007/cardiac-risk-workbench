@@ -425,6 +425,7 @@
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 12px;
+    grid-auto-rows: auto;
   }
 
   .timeline-day {
@@ -1014,6 +1015,19 @@
 
     <!-- MONITORING -->
     <div class="view" id="view-monitoring">
+      <div class="card" style="margin-bottom:12px;">
+        <div class="card-title">&#9881; Monitoringduur instellen</div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div class="form-group" style="width:180px;">
+            <label class="form-label">Aantal dagen (1–30)</label>
+            <input class="form-input" type="number" min="1" max="30" id="monitoring-days-input" oninput="setMonitoringDays(this.value)">
+          </div>
+          <div style="font-size:12px;color:var(--slate-400);margin-top:16px;">
+            Pas aan op basis van verwachte opnameduur of follow-up protocol.<br>
+            Standaard: 3 dagen &middot; IC/vaatchirurgie: 7–14 dagen &middot; Maximale risicoperiode MINS: 30 dagen
+          </div>
+        </div>
+      </div>
       <div class="card">
         <div class="card-title"><span class="card-title-icon">&#9203;</span> Postoperatieve monitoring — Troponine tijdlijn</div>
         <p class="text-sm text-muted mb-16">
@@ -1197,6 +1211,31 @@
 
 <script>
 // ============================================================
+// MONITORING HELPERS
+// ============================================================
+
+function initMonitoringDays(n) {
+  return Array.from({ length: n }, () => ({ troponin: null, map: null, hr: null, notes: '' }));
+}
+
+function setMonitoringDays(n) {
+  const p = AppState.currentPatient;
+  if (!p) return;
+  const days = Math.min(30, Math.max(1, parseInt(n) || 3));
+  p.monitoring.monitoringDays = days;
+  const current = p.monitoring.days || [];
+  if (current.length < days) {
+    while (p.monitoring.days.length < days) {
+      p.monitoring.days.push({ troponin: null, map: null, hr: null, notes: '' });
+    }
+  } else if (current.length > days) {
+    p.monitoring.days = current.slice(0, days);
+  }
+  AppState.setPatient(p);
+  UI.renderMonitoring(p);
+}
+
+// ============================================================
 // DATA MODEL LAYER
 // FHIR-aligned internal object structure.
 // Each section maps to a FHIR resource type (see comments).
@@ -1256,14 +1295,8 @@ function createEmptyPatient() {
 
     // FHIR: Observation[] (vitals + serial hs-TnT)
     monitoring: {
-      day0: { troponin: null, map: null, hr: null, notes: '' },
-      day1: { troponin: null, map: null, hr: null, notes: '' },
-      day2: { troponin: null, map: null, hr: null, notes: '' },
-      day3: { troponin: null, map: null, hr: null, notes: '' },
-      day4: { troponin: null, map: null, hr: null, notes: '' },
-      day5: { troponin: null, map: null, hr: null, notes: '' },
-      day6: { troponin: null, map: null, hr: null, notes: '' },
-      day7: { troponin: null, map: null, hr: null, notes: '' },
+      days: initMonitoringDays(3), // dynamische array — standaard 3 dagen
+      monitoringDays: 3,
       minPostopMAP: null,
       durationBelowMAP75: null,
       durationBelowMAP65: null
@@ -1298,14 +1331,12 @@ const DemoRepository = {
       medications: { betaBlocker: false, statin: true, anticoagulant: false, antiplatelet: false, aceInhibitor: true, notes: 'Lisinopril 10mg, Atorvastatine 20mg' },
       labValues: { preOpTroponin: 8, eGFR: 72, hemoglobin: 8.4, creatinine: 88 },
       monitoring: {
-        day0: { troponin: 9, map: 82, hr: 72, notes: '' },
-        day1: { troponin: 11, map: 85, hr: 70, notes: '' },
-        day2: { troponin: 10, map: 88, hr: 68, notes: '' },
-        day3: { troponin: 8, map: 90, hr: 70, notes: '' },
-        day4: { troponin: null, map: null, hr: null, notes: '' },
-        day5: { troponin: null, map: null, hr: null, notes: '' },
-        day6: { troponin: null, map: null, hr: null, notes: '' },
-        day7: { troponin: null, map: null, hr: null, notes: '' },
+        monitoringDays: 3,
+        days: [
+          { troponin: 9,  map: 82, hr: 72, notes: '' },
+          { troponin: 11, map: 85, hr: 70, notes: '' },
+          { troponin: 10, map: 88, hr: 68, notes: '' },
+        ],
         minPostopMAP: 79, durationBelowMAP75: 0, durationBelowMAP65: 0
       },
       dataSource: { identification: 'import', encounter: 'import', conditions: 'import', medications: 'import', labValues: 'import', monitoring: 'manual' }
@@ -1318,14 +1349,13 @@ const DemoRepository = {
       medications: { betaBlocker: true, statin: true, anticoagulant: false, antiplatelet: true, aceInhibitor: false, notes: 'Metoprolol 50mg, Atorvastatine 40mg, Aspirine 80mg gestaakt preop' },
       labValues: { preOpTroponin: 10, eGFR: 58, hemoglobin: 7.8, creatinine: 112 },
       monitoring: {
-        day0: { troponin: 18, map: 78, hr: 82, notes: '' },
-        day1: { troponin: 35, map: 72, hr: 85, notes: 'Patiënt klaagt over moeheid en dyspnoe' },
-        day2: { troponin: 42, map: 75, hr: 80, notes: '' },
-        day3: { troponin: 38, map: 78, hr: 78, notes: 'Licht dalend' },
-        day4: { troponin: null, map: null, hr: null, notes: '' },
-        day5: { troponin: null, map: null, hr: null, notes: '' },
-        day6: { troponin: null, map: null, hr: null, notes: '' },
-        day7: { troponin: null, map: null, hr: null, notes: '' },
+        monitoringDays: 4,
+        days: [
+          { troponin: 18, map: 78, hr: 82, notes: '' },
+          { troponin: 35, map: 72, hr: 85, notes: 'Patiënt klaagt over moeheid en dyspnoe' },
+          { troponin: 42, map: 75, hr: 80, notes: '' },
+          { troponin: 38, map: 78, hr: 78, notes: 'Licht dalend' },
+        ],
         minPostopMAP: 68, durationBelowMAP75: 45, durationBelowMAP65: 10
       },
       dataSource: { identification: 'import', encounter: 'import', conditions: 'import', medications: 'import', labValues: 'import', monitoring: 'manual' }
@@ -1338,14 +1368,16 @@ const DemoRepository = {
       medications: { betaBlocker: true, statin: true, anticoagulant: true, antiplatelet: true, aceInhibitor: true, notes: 'Carvedilol 12.5mg, Rosuvastatine 40mg, Clopidogrel, Fraxiparine therapeutisch' },
       labValues: { preOpTroponin: 18, eGFR: 38, hemoglobin: 6.9, creatinine: 165 },
       monitoring: {
-        day0: { troponin: 45, map: 62, hr: 95, notes: 'Postop instabiliteit — vasopressoren gestart' },
-        day1: { troponin: 185, map: 65, hr: 102, notes: 'Troponine significant gestegen — cardioloog geïnformeerd' },
-        day2: { troponin: 230, map: 68, hr: 98, notes: 'Cardiologie geconsulteerd — ECG verricht' },
-        day3: { troponin: 195, map: 72, hr: 90, notes: 'Licht dalend' },
-        day4: { troponin: null, map: null, hr: null, notes: '' },
-        day5: { troponin: null, map: null, hr: null, notes: '' },
-        day6: { troponin: null, map: null, hr: null, notes: '' },
-        day7: { troponin: null, map: null, hr: null, notes: '' },
+        monitoringDays: 7,
+        days: [
+          { troponin: 45,  map: 62, hr: 95,  notes: 'Postop instabiliteit — vasopressoren gestart' },
+          { troponin: 185, map: 65, hr: 102, notes: 'Troponine significant gestegen — cardioloog geïnformeerd' },
+          { troponin: 230, map: 68, hr: 98,  notes: 'Cardiologie geconsulteerd — ECG verricht' },
+          { troponin: 195, map: 72, hr: 90,  notes: 'Licht dalend' },
+          { troponin: 160, map: 74, hr: 86,  notes: '' },
+          { troponin: 130, map: 76, hr: 82,  notes: 'Verder dalend' },
+          { troponin: 98,  map: 78, hr: 80,  notes: 'Onder 150 ng/L' },
+        ],
         minPostopMAP: 58, durationBelowMAP75: 180, durationBelowMAP65: 95
       },
       dataSource: { identification: 'import', encounter: 'import', conditions: 'import', medications: 'import', labValues: 'import', monitoring: 'manual' }
@@ -1404,9 +1436,12 @@ const RuleEngine = {
   // Serial troponin analysis: peak classification + MINS delta + trend
   // MINS definition: Thygesen 2018 / VISION study / Mol 2024
   evaluateTroponinRisk(patient) {
-    const days = ['day0','day1','day2','day3','day4','day5','day6','day7'];
-    const rawValues = days.map(d => patient.monitoring[d]?.troponin);
-    const presentValues = rawValues.filter(v => v !== null && v !== undefined && v !== '').map(Number);
+    // Dynamic array — supports 1–30 configured monitoring days
+    const monDays = patient.monitoring.days || [];
+    const presentValues = monDays
+      .map(d => d?.troponin)
+      .filter(v => v !== null && v !== undefined && v !== '')
+      .map(Number);
 
     if (presentValues.length === 0) {
       return { level: 'geen data', color: 'gray', peak: null, trend: null, flags: [], presentValues: [] };
@@ -1421,8 +1456,8 @@ const RuleEngine = {
     // Thygesen 2018 / VISION / Mol 2024, H2
     const preop = patient.labValues?.preOpTroponin;
     if (preop !== null && preop !== undefined && preop > 0) {
-      days.forEach((day, idx) => {
-        const val = patient.monitoring[day]?.troponin;
+      monDays.forEach((dayData, idx) => {
+        const val = dayData?.troponin;
         if (val !== null && val !== undefined && val !== '') {
           const n = Number(val);
           const risePct = ((n - preop) / preop) * 100;
@@ -1711,44 +1746,58 @@ const UI = {
   },
 
   renderMonitoring(p) {
-    const days = ['day0','day1','day2','day3','day4','day5','day6','day7'];
-    const dayLabels = ['Dag 0 (operatiedag)','Dag 1 postop','Dag 2 postop','Dag 3 postop','Dag 4 postop','Dag 5 postop','Dag 6 postop','Dag 7 postop'];
+    // Dynamic monitoring: 1–30 days configured per patient
+    const n = p.monitoring.monitoringDays || 3;
+
+    // Ensure days array has the right length
+    if (!p.monitoring.days || p.monitoring.days.length < n) {
+      p.monitoring.days = initMonitoringDays(n);
+    }
+
+    // Sync config input
+    const daysInput = document.getElementById('monitoring-days-input');
+    if (daysInput) daysInput.value = n;
+
+    // Dynamic labels: dag 0 = operatiedag
+    const dayLabels = Array.from({ length: n }, (_, i) =>
+      i === 0 ? 'Dag 0 (operatiedag)' : `Dag ${i} postop`
+    );
 
     const getTroponinClass = (v) => {
       if (v === null || v === undefined || v === '') return 'level-none';
-      const n = Number(v);
-      if (n < 14) return 'level-normal';
-      if (n < 50) return 'level-attention';
-      if (n < 150) return 'level-elevated';
+      const num = Number(v);
+      if (num < 14) return 'level-normal';
+      if (num < 50) return 'level-attention';
+      if (num < 150) return 'level-elevated';
       return 'level-critical';
     };
 
     const getTroponinLabel = (v) => {
       if (v === null || v === undefined || v === '') return '—';
-      const n = Number(v);
-      if (n < 14) return 'Normaal';
-      if (n < 50) return 'Verhoogde aandacht';
-      if (n < 150) return 'Relevante schade';
+      const num = Number(v);
+      if (num < 14) return 'Normaal';
+      if (num < 50) return 'Verhoogde aandacht';
+      if (num < 150) return 'Relevante schade';
       return 'Zeer hoog risico';
     };
 
     // Mol 2024, H6: 1-jaars uitkomstdata per hs-TnT categorie (N=3085)
     const getMolOutcome = (v) => {
       if (v === null || v === undefined || v === '') return null;
-      const n = Number(v);
-      if (n < 14) return { mace: '3.4%', mort: '10.3%', label: 'Mol 2024, H6' };
-      if (n < 50) return { mace: '6.1%', mort: null, label: 'Mol 2024, H6' };
-      if (n < 150) return { mace: '10.4%', mort: null, label: 'Mol 2024, H6' };
+      const num = Number(v);
+      if (num < 14) return { mace: '3.4%', mort: '10.3%', label: 'Mol 2024, H6' };
+      if (num < 50) return { mace: '6.1%', mort: null, label: 'Mol 2024, H6' };
+      if (num < 150) return { mace: '10.4%', mort: null, label: 'Mol 2024, H6' };
       return { mace: '40.6%', mort: '46.5%', label: 'Mol 2024, H6' };
     };
 
-    document.getElementById('troponin-timeline').innerHTML = days.map((day, i) => {
-      const data = p.monitoring[day] || { troponin: null, map: null, hr: null, notes: '' };
+    document.getElementById('troponin-timeline').innerHTML = p.monitoring.days.slice(0, n).map((data, i) => {
       const tn = data.troponin;
       const displayVal = (tn !== null && tn !== undefined && tn !== '') ? tn + ' ng/L' : '—';
       const cls = getTroponinClass(tn);
-      const sectionBreak = i === 4
-        ? `<div style="grid-column:1/-1;font-size:11px;font-weight:700;color:var(--slate-400);text-transform:uppercase;letter-spacing:0.08em;padding:14px 0 6px;border-top:1px solid var(--slate-200);margin-top:4px;">Uitgebreide monitoring (Dag 4–7)</div>`
+      // Section break after dag 3 when monitoring runs longer
+      const sectionBreak = (i === 4 && n > 4)
+        ? `<div style="grid-column:1/-1;font-size:11px;font-weight:700;color:var(--slate-400);text-transform:uppercase;letter-spacing:0.08em;padding:14px 0 6px;border-top:1px solid var(--slate-200);margin-top:4px;">Uitgebreide monitoring (Dag 4–${n - 1})</div>`
         : '';
       return `${sectionBreak}
         <div class="timeline-day">
@@ -1756,7 +1805,7 @@ const UI = {
           <div class="form-group">
             <label class="form-label">hs-TnT (ng/L)</label>
             <input class="form-input" type="number" value="${tn !== null && tn !== undefined ? tn : ''}"
-              placeholder="ng/L" oninput="syncDayMonitor('${day}', 'troponin', this.value); UI.renderMonitoring(AppState.getPatient())">
+              placeholder="ng/L" oninput="syncDayMonitorByIndex(${i}, 'troponin', this.value); UI.renderMonitoring(AppState.getPatient())">
           </div>
           <div class="troponin-value-display ${cls}" style="margin:8px 0 4px;">${displayVal}</div>
           <div class="text-sm text-muted">${getTroponinLabel(tn)}</div>
@@ -1764,17 +1813,17 @@ const UI = {
           <div class="form-group mt-8">
             <label class="form-label">MAP (mmHg)</label>
             <input class="form-input" type="number" value="${data.map !== null && data.map !== undefined ? data.map : ''}"
-              placeholder="mmHg" oninput="syncDayMonitor('${day}', 'map', this.value)">
+              placeholder="mmHg" oninput="syncDayMonitorByIndex(${i}, 'map', this.value)">
           </div>
           <div class="form-group mt-8">
             <label class="form-label">Hartfrequentie</label>
             <input class="form-input" type="number" value="${data.hr !== null && data.hr !== undefined ? data.hr : ''}"
-              placeholder="bpm" oninput="syncDayMonitor('${day}', 'hr', this.value)">
+              placeholder="bpm" oninput="syncDayMonitorByIndex(${i}, 'hr', this.value)">
           </div>
           <div class="form-group mt-8">
             <label class="form-label">Notitie</label>
             <textarea class="form-textarea" style="min-height:48px;" placeholder="Vrije notitie..."
-              oninput="syncDayMonitor('${day}', 'notes', this.value)">${data.notes || ''}</textarea>
+              oninput="syncDayMonitorByIndex(${i}, 'notes', this.value)">${data.notes || ''}</textarea>
           </div>
         </div>`;
     }).join('');
@@ -2027,11 +2076,17 @@ function syncMonitor(key, value) {
   updateJsonPreview();
 }
 
-function syncDayMonitor(day, key, value) {
+// Replaced by syncDayMonitorByIndex — kept as no-op for safety
+function syncDayMonitor(day, key, value) {}
+
+function syncDayMonitorByIndex(index, key, value) {
   ensurePatient();
-  if (!AppState.currentPatient.monitoring[day]) AppState.currentPatient.monitoring[day] = {};
-  AppState.currentPatient.monitoring[day][key] = (key !== 'notes' && value !== '') ? Number(value) : value;
-  AppState.setPatient(AppState.currentPatient);
+  const p = AppState.currentPatient;
+  if (!p.monitoring.days[index]) {
+    p.monitoring.days[index] = { troponin: null, map: null, hr: null, notes: '' };
+  }
+  p.monitoring.days[index][key] = (key !== 'notes' && value !== '') ? Number(value) : value;
+  AppState.setPatient(p);
   updateJsonPreview();
 }
 
@@ -2158,7 +2213,6 @@ function copySummary(btn) {
   }
 }
 
-<<<<<<< HEAD
 // Preoperatieve hs-TnT interpretatie (Mol 2024, H2)
 function updatePreopTnInterpretation(val) {
   const el = document.getElementById('preop-tn-interp');
@@ -2174,7 +2228,6 @@ function updatePreopTnInterpretation(val) {
   }
 }
 
-=======
 // ============================================================
 // TOAST
 // ============================================================
@@ -2257,7 +2310,6 @@ function toggleJsonPreview() {
   if (isHidden) updateJsonPreview();
 }
 
->>>>>>> afea89d (feat: validatie, MINS-delta, dag 7 monitoring, UI-feedback, dashboard fixes, JSON-toggle)
 // Close modal on overlay click
 document.getElementById('demo-modal').addEventListener('click', function(e) {
   if (e.target === this) closeDemoModal();
