@@ -724,6 +724,76 @@
   .trend-down-ab { color: var(--amber); }
   .trend-norm { color: var(--green); }
 
+  /* CSV IMPORT */
+  .warning-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 6px;
+    background: var(--amber-light);
+    border: 1px solid #fcd34d;
+    color: #78350f;
+    font-size: 13px;
+    margin-bottom: 16px;
+  }
+
+  .dropzone {
+    border: 2px dashed var(--slate-300);
+    border-radius: 8px;
+    padding: 40px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--slate-50);
+  }
+  .dropzone:hover, .dropzone.dragover {
+    border-color: var(--teal);
+    background: var(--teal-light);
+  }
+  .dropzone-icon { font-size: 36px; margin-bottom: 10px; }
+  .dropzone-text { font-size: 14px; color: var(--slate-600); margin-bottom: 4px; font-weight: 500; }
+  .dropzone-sub { font-size: 12px; color: var(--slate-400); }
+
+  .progress-bar-wrap {
+    background: var(--slate-100);
+    border-radius: 999px;
+    height: 8px;
+    overflow: hidden;
+    margin: 12px 0;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--teal);
+    border-radius: 999px;
+    transition: width 0.4s ease;
+  }
+
+  .import-result-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--slate-200);
+    background: #fff;
+    font-size: 12px;
+  }
+  .import-result-row.success { border-color: #86efac; background: var(--green-light); color: #14532d; }
+  .import-result-row.error   { border-color: #fca5a5; background: var(--red-light);   color: #7f1d1d; }
+
+  .csv-template {
+    background: var(--slate-900);
+    color: #a5f3fc;
+    padding: 12px 16px;
+    border-radius: 6px;
+    font-size: 11px;
+    overflow-x: auto;
+    white-space: nowrap;
+    font-family: 'Courier New', Courier, monospace;
+    line-height: 1.6;
+  }
+
   @media (max-width: 800px) {
     .stats-row { grid-template-columns: 1fr 1fr; }
     .timeline-grid { grid-template-columns: 1fr 1fr; }
@@ -774,6 +844,9 @@
     <div class="nav-item" data-view="patient-form" onclick="navigate('patient-form', this)">
       <span class="nav-icon">&#9872;</span> Patiëntdossier
     </div>
+    <div class="nav-item" data-view="import" onclick="navigate('import', this)">
+      <span class="nav-icon">&#8613;</span> Data Import
+    </div>
     <div class="nav-item" data-view="risk-intake" onclick="navigate('risk-intake', this)">
       <span class="nav-icon">&#9651;</span> Risico-intake
     </div>
@@ -811,6 +884,7 @@
     </div>
     <div class="topbar-actions">
       <button class="btn btn-secondary btn-sm" onclick="openDemoModal()">&#9654; Laad demo-casus</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV()">&#8615; Resultaten exporteren</button>
       <button class="btn btn-primary btn-sm" onclick="newPatient()">+ Nieuwe patiënt</button>
     </div>
   </div>
@@ -994,6 +1068,61 @@
       <div style="display:flex;gap:10px;">
         <button class="btn btn-primary" onclick="validatePatientForm() && navigate('risk-intake')">Doorgaan naar risico-intake &rarr;</button>
         <button class="btn btn-secondary" onclick="navigate('dashboard')">Annuleren</button>
+      </div>
+    </div>
+
+    <!-- DATA IMPORT -->
+    <div class="view" id="view-import">
+      <h2 style="font-size:18px;font-weight:700;color:var(--slate-800);margin-bottom:16px;">Patiëntdata importeren via CSV</h2>
+
+      <div class="warning-banner">
+        <span style="font-size:20px;flex-shrink:0;">&#9888;</span>
+        <div><strong>Anonimiseringsplicht:</strong> Gebruik alleen volledig geanonimiseerde data. Nooit namen, BSN of directe herleidingsgegevens uploaden.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="card-title-icon">&#8613;</span> CSV-bestand uploaden</div>
+        <div class="dropzone" id="csv-dropzone"
+          onclick="document.getElementById('csv-file-input').click()"
+          ondragover="event.preventDefault(); this.classList.add('dragover')"
+          ondragleave="this.classList.remove('dragover')"
+          ondrop="handleDrop(event)">
+          <div class="dropzone-icon">&#128196;</div>
+          <div class="dropzone-text">Sleep hier je CSV-bestand of klik om te browsen</div>
+          <div class="dropzone-sub">Alleen .csv bestanden &middot; Max. 500 rijen per import</div>
+        </div>
+        <input type="file" id="csv-file-input" accept=".csv" style="display:none" onchange="handleFileSelect(this)">
+        <div style="margin-top:12px;display:flex;gap:8px;align-items:center;">
+          <button class="btn btn-secondary btn-sm" onclick="downloadCSVTemplate()">&#8615; Template downloaden</button>
+          <span class="text-sm text-muted">Leeg sjabloon met de juiste kolomstructuur</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="card-title-icon">&#9783;</span> Verwachte kolomstructuur</div>
+        <p class="text-sm text-muted mb-12">Kolomnamen zijn case-insensitief. Kolommen mogen in willekeurige volgorde staan. Ontbrekende kolommen worden als leeg beschouwd.</p>
+        <div class="csv-template">patient_id,leeftijd,geslacht,operatietype,spoedoperatie,CAD,eerder_MI,hartfalen,cerebrovasculair,perifeer_vaataandoening,diabetes,nierziekte,hypertensie,beta_blokker,preop_TnT,dag1_TnT,dag1_MAP,dag2_TnT,dag2_MAP,dag3_TnT,dag3_MAP</div>
+        <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr;gap:8px;" class="text-sm text-muted">
+          <div><strong>geslacht:</strong> M / V / X</div>
+          <div><strong>spoedoperatie / comorbiditeiten:</strong> 1 of 0 (of ja/nee, true/false)</div>
+          <div><strong>preop_TnT / dagX_TnT:</strong> numerieke waarde in ng/L</div>
+          <div><strong>dagX_MAP:</strong> numerieke waarde in mmHg</div>
+        </div>
+      </div>
+
+      <div id="import-progress-section" style="display:none;">
+        <div class="card">
+          <div class="card-title"><span class="card-title-icon">&#9203;</span> Importvoortgang</div>
+          <div class="progress-bar-wrap">
+            <div class="progress-bar-fill" id="import-progress-fill" style="width:0%"></div>
+          </div>
+          <div id="import-progress-text" class="text-sm text-muted mb-12">Bezig met verwerken...</div>
+          <div id="import-result-list" style="display:flex;flex-direction:column;gap:6px;"></div>
+        </div>
+      </div>
+
+      <div style="margin-top:4px;">
+        <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="clearImportedData()">&#9746; Wis alle geïmporteerde data uit sessie</button>
       </div>
     </div>
 
@@ -1519,7 +1648,7 @@ const RuleEngine = {
       }
     }
 
-    return { level, color, peak, trend, flags, presentValues, rawValues, minsCriteriumMet };
+    return { level, color, peak, trend, flags, presentValues, minsCriteriumMet };
   },
 
   // Hemodynamic risk: focus on postop hypotension
@@ -2025,6 +2154,7 @@ Betablokker-continuatie: Mol 2024, Hoofdstuk 4 (N=1468 matched pairs).`;
     const titles = {
       dashboard: ['Dashboard', 'Sessieoverzicht'],
       'patient-form': ['Patiëntdossier', AppState.currentPatient ? `${AppState.currentPatient.firstName} ${AppState.currentPatient.lastName}` : 'Nieuwe patiënt'],
+      import: ['Data Import', 'CSV bulk-upload voor geanonimiseerde patiëntdata'],
       'risk-intake': ['Risico-intake', 'Baselinerisico berekenen'],
       monitoring: ['Monitoring', 'Postoperatieve tijdlijn'],
       alerts: ['Alert-engine', 'Geautomatiseerde risicosignalering'],
@@ -2137,6 +2267,7 @@ function navigate(viewId, navEl) {
 
   if (viewId === 'dashboard') { UI.renderDashboard(); }
   else if (viewId === 'patient-form' && p) { UI.renderPatientForm(p); }
+  else if (viewId === 'import') { /* import view is static, no render needed */ }
   else if (viewId === 'risk-intake') {
     if (p) { computeAndShowRisk(); }
   }
@@ -2311,6 +2442,283 @@ function updateDateDisplay(val) {
     const d = new Date(val + 'T00:00:00'); // force local time
     el.textContent = d.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
   } catch(e) { el.textContent = ''; }
+}
+
+// ============================================================
+// CSV IMPORT
+// ============================================================
+
+function handleDrop(event) {
+  event.preventDefault();
+  document.getElementById('csv-dropzone').classList.remove('dragover');
+  const file = event.dataTransfer.files[0];
+  if (file && file.name.endsWith('.csv')) {
+    processCSVFile(file);
+  } else {
+    showToast('Alleen .csv bestanden worden geaccepteerd', true);
+  }
+}
+
+function handleFileSelect(input) {
+  const file = input.files[0];
+  if (file) processCSVFile(file);
+  input.value = '';
+}
+
+function processCSVFile(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result;
+    runCSVImport(text, file.name);
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function parseCSVText(text) {
+  const lines = text.split(/\r?\n/).filter(l => l.trim() !== '');
+  if (lines.length < 2) return { headers: [], rows: [] };
+  const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+  const rows = lines.slice(1).map(line => {
+    const values = line.split(',').map(v => v.trim());
+    const row = {};
+    headers.forEach((h, i) => { row[h] = values[i] !== undefined ? values[i] : ''; });
+    return row;
+  });
+  return { headers, rows };
+}
+
+function parseBool(val) {
+  if (val === undefined || val === null || val === '') return false;
+  const s = String(val).toLowerCase().trim();
+  return s === '1' || s === 'true' || s === 'ja' || s === 'yes';
+}
+
+function parseNum(val) {
+  if (val === undefined || val === null || val === '') return null;
+  const n = Number(val);
+  return isNaN(n) ? null : n;
+}
+
+function buildPatientFromCSVRow(row, rowIndex) {
+  const errors = [];
+
+  // Required: leeftijd
+  const age = parseNum(row['leeftijd']);
+  if (age === null || age < 1 || age > 120) errors.push('leeftijd ontbreekt of ongeldig');
+
+  const gender = (row['geslacht'] || '').toUpperCase().trim();
+  if (!['M', 'V', 'X', ''].includes(gender)) errors.push('ongeldig geslacht (gebruik M/V/X)');
+
+  if (errors.length > 0) return { ok: false, errors };
+
+  const patientId = row['patient_id'] || ('CSV-' + Date.now() + '-' + rowIndex);
+
+  // Build monitoring days from CSV columns dag1..dag3
+  const days = [{ troponin: null, map: null, hr: null, notes: '' }]; // dag 0 — niet in CSV
+  for (let d = 1; d <= 3; d++) {
+    const tn  = parseNum(row[`dag${d}_tnt`] || row[`dag${d}_troponin`] || row[`dag${d}_hs-tnt`]);
+    const map = parseNum(row[`dag${d}_map`]);
+    days.push({ troponin: tn, map: map, hr: null, notes: '' });
+  }
+  // Trim trailing empty days
+  while (days.length > 1 && days[days.length - 1].troponin === null && days[days.length - 1].map === null) {
+    days.pop();
+  }
+  const monitoringDays = days.length;
+
+  const p = createEmptyPatient();
+  p.id = patientId;
+  p.dossierID = patientId;
+  p.age = age;
+  p.gender = gender || 'X';
+  p.firstName = '';
+  p.lastName = row['patient_id'] || `Rij ${rowIndex + 1}`;
+  p.source = 'csv-import';
+
+  p.encounter.surgeryType = row['operatietype'] || '';
+  p.encounter.surgeryRiskCategory = '';
+  p.encounter.emergencyProcedure = parseBool(row['spoedoperatie']);
+
+  p.conditions.cad                    = parseBool(row['cad']);
+  p.conditions.priorMI                = parseBool(row['eerder_mi']);
+  p.conditions.heartFailure           = parseBool(row['hartfalen']);
+  p.conditions.cerebrovascularDisease = parseBool(row['cerebrovasculair']);
+  p.conditions.peripheralVascularDisease = parseBool(row['perifeer_vaataandoening']);
+  p.conditions.diabetes               = parseBool(row['diabetes']);
+  p.conditions.renalDisease           = parseBool(row['nierziekte']);
+  p.conditions.hypertension           = parseBool(row['hypertensie']);
+
+  p.medications.betaBlocker = parseBool(row['beta_blokker']);
+
+  p.labValues.preOpTroponin = parseNum(row['preop_tnt'] || row['preop_troponin'] || row['preop_hs-tnt']);
+
+  p.monitoring.days = days;
+  p.monitoring.monitoringDays = monitoringDays;
+
+  p.dataSource = { identification: 'import', encounter: 'import', conditions: 'import', medications: 'import', labValues: 'import', monitoring: 'import' };
+
+  return { ok: true, patient: p };
+}
+
+function runCSVImport(csvText, fileName) {
+  const section = document.getElementById('import-progress-section');
+  const fill    = document.getElementById('import-progress-fill');
+  const status  = document.getElementById('import-progress-text');
+  const list    = document.getElementById('import-result-list');
+
+  section.style.display = 'block';
+  fill.style.width = '0%';
+  list.innerHTML = '';
+
+  const { rows } = parseCSVText(csvText);
+
+  if (rows.length === 0) {
+    status.textContent = 'Geen geldige rijen gevonden in het bestand.';
+    fill.style.width = '100%';
+    showToast('Geen rijen gevonden in CSV', true);
+    return;
+  }
+
+  const maxRows = Math.min(rows.length, 500);
+  let ok = 0, fail = 0;
+
+  rows.slice(0, maxRows).forEach((row, i) => {
+    const result = buildPatientFromCSVRow(row, i);
+    fill.style.width = Math.round(((i + 1) / maxRows) * 100) + '%';
+
+    const div = document.createElement('div');
+    div.className = 'import-result-row';
+
+    if (result.ok) {
+      ok++;
+      // Avoid duplicate ids
+      const existingIdx = AppState.sessionPatients.findIndex(p => p.id === result.patient.id);
+      if (existingIdx >= 0) AppState.sessionPatients[existingIdx] = result.patient;
+      else AppState.sessionPatients.push(result.patient);
+
+      div.classList.add('success');
+      const riskLabel = { green: 'Laag', amber: 'Verhoogd', orange: 'Hoog', red: 'Urgent', gray: '—' };
+      const riskResult = RuleEngine.evaluateBaselineRisk(result.patient);
+      div.textContent = `✓ Rij ${i + 1} — ${result.patient.lastName} | ${result.patient.age} jr | Baselinerisico: ${riskLabel[riskResult.color] || riskResult.level}`;
+    } else {
+      fail++;
+      div.classList.add('error');
+      div.textContent = `✗ Rij ${i + 1} — ${result.errors.join(', ')}`;
+    }
+    list.appendChild(div);
+  });
+
+  status.textContent = `Klaar: ${ok} patiënten geïmporteerd${fail > 0 ? `, ${fail} rijen overgeslagen` : ''} — uit "${fileName}"`;
+  fill.style.width = '100%';
+  UI.renderDashboard();
+  showToast(`${ok} patiënten geïmporteerd uit ${fileName}`, false);
+}
+
+function downloadCSVTemplate() {
+  const header = 'patient_id,leeftijd,geslacht,operatietype,spoedoperatie,CAD,eerder_MI,hartfalen,cerebrovasculair,perifeer_vaataandoening,diabetes,nierziekte,hypertensie,beta_blokker,preop_TnT,dag1_TnT,dag1_MAP,dag2_TnT,dag2_MAP,dag3_TnT,dag3_MAP';
+  const example = 'PAT-001,67,M,Heupprothese,0,1,0,0,0,0,1,0,1,1,12,18,78,25,74,22,76';
+  const csv = header + '\n' + example + '\n';
+  triggerDownload(csv, 'cardiac-risk-import-template.csv', 'text/csv;charset=utf-8;');
+}
+
+function clearImportedData() {
+  if (!confirm('Weet je zeker dat je alle patiëntdata uit de sessie wilt wissen?')) return;
+  AppState.sessionPatients = [];
+  AppState.currentPatient = null;
+  UI.renderDashboard();
+  const progressSection = document.getElementById('import-progress-section');
+  if (progressSection) progressSection.style.display = 'none';
+  showToast('Alle sessiedata gewist', false);
+}
+
+// ============================================================
+// CSV EXPORT
+// ============================================================
+
+function exportCSV() {
+  const patients = AppState.sessionPatients.filter(p => p && p.age);
+  if (patients.length === 0) {
+    showToast('Geen patiënten in sessie om te exporteren', true);
+    return;
+  }
+
+  const headers = [
+    'patient_id', 'leeftijd', 'baseline_risico', 'preop_TnT_status',
+    'troponine_trend', 'MINS_status', 'hemodynamiek_alert',
+    'urgentie_label', 'aanbeveling_kort', 'artsensamenvatting'
+  ];
+
+  const rows = patients.map(p => {
+    const result = RuleEngine.generateRecommendations(p);
+    const { baseline, troponin, hemodynamic, recommendations, overallUrgency } = result;
+
+    const preOpTnT = p.labValues.preOpTroponin;
+    const preopStatus = preOpTnT === null || preOpTnT === undefined
+      ? 'niet gemeten'
+      : preOpTnT > 14 ? 'verhoogd (>99e perc, >14 ng/L)' : 'normaal (≤14 ng/L)';
+
+    const trend = troponin.trend || (troponin.peak === null ? 'geen data' : 'stabiel');
+
+    const minsStatus = troponin.minsCriteriumMet ? 'MINS-criterium bereikt' : 'geen MINS';
+
+    const urgencyNL = {
+      laag: 'Laag risico',
+      matig: 'Matig verhoogd',
+      hoog: 'Hoog risico',
+      urgent: 'Urgent'
+    };
+
+    const topRec = recommendations[0] ? `[${recommendations[0].priority.toUpperCase()}] ${recommendations[0].text}` : '—';
+
+    // Summary as single line
+    const summaryShort = [
+      `${p.firstName || ''} ${p.lastName || ''}`.trim() || p.id,
+      `${p.age}jr`,
+      p.encounter.surgeryType || '—',
+      `Baselinerisico: ${baseline.level}`,
+      troponin.peak !== null ? `TnT piek: ${troponin.peak} ng/L (${troponin.level})` : 'TnT: geen data',
+      `Hemodynamiek: ${hemodynamic.level}`,
+      `Urgentie: ${overallUrgency}`
+    ].join(' | ');
+
+    return [
+      csvEscape(p.dossierID || p.id),
+      p.age,
+      csvEscape(baseline.level),
+      csvEscape(preopStatus),
+      csvEscape(trend),
+      csvEscape(minsStatus),
+      csvEscape(hemodynamic.level),
+      csvEscape(urgencyNL[overallUrgency] || overallUrgency),
+      csvEscape(topRec),
+      csvEscape(summaryShort)
+    ].join(',');
+  });
+
+  const csv = [headers.join(','), ...rows].join('\n');
+  const now = new Date().toISOString().slice(0, 10);
+  triggerDownload(csv, `cardiac-risk-export-${now}.csv`, 'text/csv;charset=utf-8;');
+  showToast(`${patients.length} patiënten geëxporteerd`, false);
+}
+
+function csvEscape(val) {
+  const s = String(val === null || val === undefined ? '' : val);
+  if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
+
+function triggerDownload(content, filename, mimeType) {
+  const blob = new Blob(['﻿' + content], { type: mimeType }); // BOM for Excel UTF-8
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // ============================================================
