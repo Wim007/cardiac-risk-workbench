@@ -943,7 +943,8 @@
         <div class="form-grid form-grid-3">
           <div class="form-group">
             <label class="form-label">Preop hs-TnT (ng/L) <span class="source-badge source-import">Import-ready</span></label>
-            <input class="form-input" id="l-preTn" type="number" placeholder="bijv. 10" oninput="syncLab('preOpTroponin', +this.value)">
+            <input class="form-input" id="l-preTn" type="number" placeholder="bijv. 10" oninput="syncLab('preOpTroponin', +this.value); updatePreopTnInterpretation(this.value)">
+            <div id="preop-tn-interp" style="font-size:11px;margin-top:3px;"></div>
           </div>
           <div class="form-group">
             <label class="form-label">eGFR (ml/min/1.73m²)</label>
@@ -1366,15 +1367,16 @@ const RuleEngine = {
 
     if (peak >= 150) {
       level = 'zeer hoog risico'; color = 'red';
-      flags.push('hs-TnT piekwaarde ≥ 150 ng/L — voldoet aan drempel voor MINS');
+      flags.push('hs-TnT piekwaarde ≥ 150 ng/L — voldoet aan drempel voor MINS | 1-jr MACE: 40.6%, mortaliteit: 46.5% (Mol 2024, H6)');
     } else if (peak >= 50) {
       level = 'verhoogd risico'; color = 'orange';
-      flags.push('hs-TnT piekwaarde 50–149 ng/L — relevante myocardiale schade');
+      flags.push('hs-TnT piekwaarde 50–149 ng/L — relevante myocardiale schade | 1-jr MACE: 10.4% (Mol 2024, H6)');
     } else if (peak >= 14) {
       level = 'aandacht vereist'; color = 'amber';
-      flags.push('hs-TnT piekwaarde 14–49 ng/L — verhoogde aandacht, trend verplicht');
+      flags.push('hs-TnT piekwaarde 14–49 ng/L — verhoogde aandacht, trend verplicht | 1-jr MACE: 6.1% (Mol 2024, H6)');
     } else {
       level = 'normaal bereik'; color = 'green';
+      flags.push('hs-TnT piekwaarde < 14 ng/L — binnen referentiewaarde | 1-jr MACE: 3.4% (Mol 2024, H6)');
     }
 
     // Trend (last two available values)
@@ -1410,20 +1412,23 @@ const RuleEngine = {
 
     if (m.minPostopMAP !== null && m.minPostopMAP !== '') {
       const map = Number(m.minPostopMAP);
-      if (map < 65) { score += 3; flags.push('Laagste postop MAP < 65 mmHg — hemodynamisch kritisch'); }
-      else if (map < 75) { score += 2; flags.push('Laagste postop MAP < 75 mmHg — hemodynamische aandacht vereist'); }
+      if (map < 65) { score += 3; flags.push('Laagste postop MAP < 65 mmHg — hemodynamisch kritisch (Mol 2024, H5)'); }
+      else if (map < 75) { score += 2; flags.push('Laagste postop MAP < 75 mmHg — hemodynamische aandacht vereist (Mol 2024, H5)'); }
     }
 
     if (m.durationBelowMAP65 !== null && m.durationBelowMAP65 !== '') {
       const dur = Number(m.durationBelowMAP65);
-      if (dur > 60) { score += 3; flags.push('MAP < 65 gedurende ' + dur + ' min — sterk verhoogd orgaanschaderisico'); }
-      else if (dur > 20) { score += 2; flags.push('MAP < 65 gedurende ' + dur + ' min — aanhoudende hypotensie'); }
-      else if (dur > 0) { score += 1; flags.push('MAP < 65 gedurende ' + dur + ' min'); }
+      // Mol 2024 H5: duur MAP <60 mmHg 2-4u: aOR 3.26 (95%CI 1.57-6.48) voor myocardschade
+      if (dur > 60) { score += 3; flags.push('MAP < 65 gedurende ' + dur + ' min — sterk verhoogd risico myocardschade (Mol 2024, H5: aOR 3.26 bij >2u <60 mmHg)'); }
+      else if (dur > 20) { score += 2; flags.push('MAP < 65 gedurende ' + dur + ' min — aanhoudende hypotensie, onafh. risicofactor myocardschade (Mol 2024, H5)'); }
+      else if (dur > 0) { score += 1; flags.push('MAP < 65 gedurende ' + dur + ' min (Mol 2024, H5)'); }
     }
 
     if (m.durationBelowMAP75 !== null && m.durationBelowMAP75 !== '') {
       const dur = Number(m.durationBelowMAP75);
-      if (dur > 90) { score += 1; flags.push('MAP < 75 gedurende ' + dur + ' min — aandachtspunt'); }
+      // Mol 2024 H5: duur MAP <75 mmHg >635 min: aOR 2.68 (95%CI 1.46-5.07) voor myocardschade
+      if (dur > 635) { score += 2; flags.push('MAP < 75 gedurende ' + dur + ' min — aOR 2.68 voor myocardschade (Mol 2024, H5: 95%CI 1.46–5.07)'); }
+      else if (dur > 90) { score += 1; flags.push('MAP < 75 gedurende ' + dur + ' min — aandachtspunt (Mol 2024, H5)'); }
     }
 
     let level, color;
@@ -1498,6 +1503,11 @@ const RuleEngine = {
       } else {
         recs.push({ priority: 'matig', text: 'Overweeg cardiologische follow-up na ontslag bij hoog baselinerisico' });
       }
+    }
+
+    // Betablokker-advies (Mol 2024, H4: N=1468 matched pairs)
+    if (patient.medications && patient.medications.betaBlocker) {
+      recs.push({ priority: 'laag', text: 'Continueer chronische betablokkers perioperatief — niet geassocieerd met verhoogde intraoperatieve hypotensie of adverse events (Mol 2024, H4: N=1468 matched pairs, P>0.05)' });
     }
 
     // Default low risk recommendation
@@ -1608,7 +1618,9 @@ const UI = {
     document.getElementById('m-ace').checked = p.medications.aceInhibitor || false;
     document.getElementById('f-medNotes').value = p.medications.notes || '';
 
-    document.getElementById('l-preTn').value = p.labValues.preOpTroponin !== null ? p.labValues.preOpTroponin : '';
+    const preTnVal = p.labValues.preOpTroponin !== null ? p.labValues.preOpTroponin : '';
+    document.getElementById('l-preTn').value = preTnVal;
+    updatePreopTnInterpretation(preTnVal);
     document.getElementById('l-egfr').value = p.labValues.eGFR !== null ? p.labValues.eGFR : '';
     document.getElementById('l-hb').value = p.labValues.hemoglobin !== null ? p.labValues.hemoglobin : '';
     document.getElementById('l-creat').value = p.labValues.creatinine !== null ? p.labValues.creatinine : '';
@@ -1636,6 +1648,16 @@ const UI = {
       return 'Zeer hoog risico';
     };
 
+    // Mol 2024, H6: 1-jaars uitkomstdata per hs-TnT categorie (N=3085)
+    const getMolOutcome = (v) => {
+      if (v === null || v === undefined || v === '') return null;
+      const n = Number(v);
+      if (n < 14) return { mace: '3.4%', mort: '10.3%', label: 'Mol 2024, H6' };
+      if (n < 50) return { mace: '6.1%', mort: null, label: 'Mol 2024, H6' };
+      if (n < 150) return { mace: '10.4%', mort: null, label: 'Mol 2024, H6' };
+      return { mace: '40.6%', mort: '46.5%', label: 'Mol 2024, H6' };
+    };
+
     document.getElementById('troponin-timeline').innerHTML = days.map((day, i) => {
       const data = p.monitoring[day];
       const tn = data.troponin;
@@ -1651,6 +1673,7 @@ const UI = {
           </div>
           <div class="troponin-value-display ${cls}" style="margin:8px 0 4px;">${displayVal}</div>
           <div class="text-sm text-muted">${getTroponinLabel(tn)}</div>
+          ${(() => { const o = getMolOutcome(tn); if (!o) return ''; return `<div style="margin-top:6px;padding:5px 8px;background:rgba(0,0,0,0.04);border-radius:4px;font-size:10px;color:var(--slate-500);line-height:1.4;"><span style="font-weight:600;">1-jr MACE: ${o.mace}</span>${o.mort ? ` &nbsp;|&nbsp; Mortaliteit: ${o.mort}` : ''}<br><span style="opacity:0.7;">${o.label} &mdash; N=3085</span></div>`; })()}
           <div class="form-group mt-8">
             <label class="form-label">MAP (mmHg)</label>
             <input class="form-input" type="number" value="${data.map !== null && data.map !== undefined ? data.map : ''}"
@@ -1750,8 +1773,21 @@ const UI = {
     const dayNames = ['dag 0 (operatiedag)','dag 1','dag 2','dag 3'];
     const trendMap = { stijgend:'stijgende trend', 'dalend maar afwijkend':'dalende maar nog steeds afwijkende trend', normaliserend:'normaliserende trend', stabiel:'stabiele trend' };
 
+    const molOutcomeMap = {
+      normaal: '1-jr MACE 3.4%, mortaliteit 10.3%',
+      aandacht: '1-jr MACE 6.1%',
+      verhoogd: '1-jr MACE 10.4%',
+      kritisch: '1-jr MACE 40.6%, mortaliteit 46.5%'
+    };
+    const getMolOutcomeLine = (peak) => {
+      if (peak === null) return '';
+      if (peak < 14) return molOutcomeMap.normaal;
+      if (peak < 50) return molOutcomeMap.aandacht;
+      if (peak < 150) return molOutcomeMap.verhoogd;
+      return molOutcomeMap.kritisch;
+    };
     const troponinLine = troponin.peak !== null
-      ? `hs-TnT piekwaarde ${troponin.peak} ng/L (${troponin.level}${troponin.trend ? ', ' + (trendMap[troponin.trend] || troponin.trend) : ''})`
+      ? `hs-TnT piekwaarde ${troponin.peak} ng/L (${troponin.level}${troponin.trend ? ', ' + (trendMap[troponin.trend] || troponin.trend) : ''}) — ${getMolOutcomeLine(troponin.peak)} (Mol 2024, H6; N=3085)`
       : 'Troponinebepalingen nog niet ingevoerd';
 
     const hemoLine = hemodynamic.flags.length > 0
@@ -1764,14 +1800,17 @@ const UI = {
 
     const now = new Date().toLocaleDateString('nl-NL', { day:'numeric', month:'long', year:'numeric' });
 
+    const surgeryRiskNL = { low: 'Laag risico', intermediate: 'Intermediate risico', high: 'Hoog risico' };
+
     const summaryText =
 `PERIOPERATIEVE CARDIALE RISICOBEOORDELING
 Gegenereerd: ${now}
 Systeem: Perioperatief Cardiaal Risico Werkbank v0.1 (beslisondersteuning, niet diagnostisch)
+Wetenschappelijke basis: Mol KH. The cardiac risk of noncardiac surgery: from biomarker to event. Proefschrift Erasmus Universiteit Rotterdam, 2024.
 
 PATIËNTCONTEXT
 Patiënt: ${p.firstName} ${p.lastName} | ${p.age} jaar | ${geslacht} | Dossier: ${p.dossierID || 'onbekend'}
-Ingreep: ${p.encounter.surgeryType || 'niet opgegeven'} | Risicocategorie chirurgie: ${p.encounter.surgeryRiskCategory || 'niet opgegeven'} | Spoedoperatie: ${p.encounter.emergencyProcedure ? 'ja' : 'nee'}
+Ingreep: ${p.encounter.surgeryType || 'niet opgegeven'} | Risicocategorie chirurgie: ${surgeryRiskNL[p.encounter.surgeryRiskCategory] || p.encounter.surgeryRiskCategory || 'niet opgegeven'} | Spoedoperatie: ${p.encounter.emergencyProcedure ? 'ja' : 'nee'}
 Afdeling: ${p.encounter.ward || '—'}
 
 RELEVANTE RISICOFACTOREN
@@ -1793,7 +1832,14 @@ ${recLines}
 ---
 Bovenstaande beoordeling is gegenereerd door een beslisondersteunend systeem op basis van handmatig ingevoerde gegevens.
 Het systeem is conceptueel en niet bedoeld als zelfstandig diagnostisch of therapeutisch instrument.
-Het klinisch oordeel van de behandelend arts blijft te allen tijde leidend.`;
+Het klinisch oordeel van de behandelend arts blijft te allen tijde leidend.
+
+BRONVERWIJZING
+Mol KH. The cardiac risk of noncardiac surgery: from biomarker to event.
+Proefschrift Erasmus Universiteit Rotterdam, 6 februari 2024. ISBN 978-94-6483-731-5.
+Troponine-drempelwaarden en uitkomstdata: Mol 2024, Hoofdstuk 6 (N=3085 patiënten).
+Hemodynamische drempelwaarden: Mol 2024, Hoofdstuk 5 (N=1710 patiënten).
+Betablokker-continuatie: Mol 2024, Hoofdstuk 4 (N=1468 matched pairs).`;
 
     document.getElementById('summary-text').textContent = summaryText;
   },
@@ -2002,6 +2048,21 @@ function copySummary() {
     ta.select();
     document.execCommand('copy');
     document.body.removeChild(ta);
+  }
+}
+
+// Preoperatieve hs-TnT interpretatie (Mol 2024, H2)
+function updatePreopTnInterpretation(val) {
+  const el = document.getElementById('preop-tn-interp');
+  if (!el) return;
+  const v = parseFloat(val);
+  if (isNaN(v) || val === '') { el.textContent = ''; el.style.color = ''; return; }
+  if (v > 14) {
+    el.innerHTML = '&#9888; Verhoogd (>99e percentiel) — in vaatchirurgiecohort had 56% hs-TnT >14 ng/L, waarvan 50% significante obstructieve CAD bij angiografie <span style="opacity:0.7;">(Mol 2024, H2)</span>';
+    el.style.color = 'var(--orange)';
+  } else {
+    el.innerHTML = '&#10003; Binnen referentiewaarde (≤14 ng/L = 99e percentiel) <span style="opacity:0.7;">(Mol 2024, H2)</span>';
+    el.style.color = 'var(--green)';
   }
 }
 
