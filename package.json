@@ -1,0 +1,13 @@
+{
+  "name": "cardiac-risk-workbench",
+  "version": "0.1.0",
+  "description": "Perioperative cardiac risk decision support workbench",
+  "scripts": {
+    "dev": "serve . -p 3000",
+    "build": "echo 'Static site — no build step'",
+    "start": "serve . -p $PORT"
+  },
+  "dependencies": {
+    "serve": "^14.2.4"
+  }
+}
