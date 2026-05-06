@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Perioperatief Cardiaal Risico Werkbank</title>
+<title>Cardiac Risk Monitor</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -829,7 +829,7 @@
 <!-- SIDEBAR -->
 <nav id="sidebar">
   <div class="sidebar-brand">
-    <div class="sidebar-brand-title">Perioperatief Cardiaal<br>Risico Werkbank</div>
+    <div class="sidebar-brand-title">Cardiac Risk<br>Monitor</div>
     <div class="sidebar-brand-sub">Beslisondersteuning</div>
     <span class="sidebar-badge">CONCEPT v0.1</span>
   </div>
@@ -1158,7 +1158,7 @@
         </div>
       </div>
       <div class="card">
-        <div class="card-title"><span class="card-title-icon">&#9203;</span> Postoperatieve monitoring — Troponine tijdlijn</div>
+        <div class="card-title"><span class="card-title-icon">&#9203;</span> Postoperatieve monitoring: Troponine tijdlijn</div>
         <p class="text-sm text-muted mb-16">
           Voer hs-TnT waarden in per postoperatieve dag. Drempelwaarden: 0–13 ng/L normaal · 14–49 aandacht · 50–149 relevant · ≥150 zeer hoog.
         </p>
@@ -1172,7 +1172,7 @@
         <div class="card-title"><span class="card-title-icon">&#9776;</span> Hemodynamische parameters
           <!-- FHIR: Observation (vital signs) -->
         </div>
-        <p class="text-sm text-muted mb-12">Nadruk op postoperatieve hypotensie — aanhoudende MAP-daling is een zelfstandige risicofactor.</p>
+        <p class="text-sm text-muted mb-12">Nadruk op postoperatieve hypotensie: aanhoudende MAP-daling is een zelfstandige risicofactor.</p>
         <div class="form-grid form-grid-3">
           <div class="form-group">
             <label class="form-label">Laagste postop MAP (mmHg)</label>
@@ -1213,7 +1213,7 @@
     <!-- ARCHITECTURE -->
     <div class="view" id="view-architecture">
       <div class="card">
-        <div class="card-title"><span class="card-title-icon">&#9670;</span> FHIR Resourcemodel — Technische gereedheid</div>
+        <div class="card-title"><span class="card-title-icon">&#9670;</span> FHIR Resourcemodel: Technische gereedheid</div>
         <p class="text-sm text-muted mb-16">De app werkt intern al met FHIR-geïnspireerde logische objecten. Onderstaand schema toont de mapping die bij productie-inzet kan worden uitgebreid.</p>
         <div class="fhir-grid">
           <div class="fhir-resource">
@@ -1283,7 +1283,7 @@
       </div>
       <div class="card" id="json-preview-card" style="display:none;">
         <div class="card-title"><span class="card-title-icon">&#9670;</span> Interne datastructuur (JSON preview)</div>
-        <p class="text-sm text-muted mb-12">Zo ziet het interne patiëntobject eruit — direct te mappen op FHIR resources.</p>
+        <p class="text-sm text-muted mb-12">Zo ziet het interne patiëntobject eruit: direct te mappen op FHIR resources.</p>
         <pre id="json-preview" style="background:var(--slate-900);color:#a5f3fc;padding:16px;border-radius:6px;font-size:11px;overflow:auto;max-height:320px;line-height:1.5;"></pre>
       </div>
 
@@ -1313,21 +1313,21 @@
       <div class="demo-case-item" onclick="loadDemo('DEMO-001')">
         <div class="demo-case-icon">&#128994;</div>
         <div>
-          <div class="demo-case-name">Casus 1 — Laag risico</div>
+          <div class="demo-case-name">Casus 1: Laag risico</div>
           <div class="demo-case-desc">J. Bakker, 58 jr, laparoscopische cholecystectomie, stabiel troponine</div>
         </div>
       </div>
       <div class="demo-case-item" onclick="loadDemo('DEMO-002')">
         <div class="demo-case-icon">&#128993;</div>
         <div>
-          <div class="demo-case-name">Casus 2 — Verhoogd risico</div>
+          <div class="demo-case-name">Casus 2: Verhoogd risico</div>
           <div class="demo-case-desc">M. de Vries, 71 jr, heupprothese, CAD + diabetes, licht verhoogd troponine</div>
         </div>
       </div>
       <div class="demo-case-item" onclick="loadDemo('DEMO-003')">
         <div class="demo-case-icon">&#128308;</div>
         <div>
-          <div class="demo-case-name">Casus 3 — Hoog risico</div>
+          <div class="demo-case-name">Casus 3: Hoog risico</div>
           <div class="demo-case-desc">P. Jansen, 78 jr, vasculaire chirurgie, troponinestijging + postop hypotensie</div>
         </div>
       </div>
@@ -1424,14 +1424,14 @@ function createEmptyPatient() {
 
     // FHIR: Observation[] (vitals + serial hs-TnT)
     monitoring: {
-      days: initMonitoringDays(3), // dynamische array — standaard 3 dagen
+      days: initMonitoringDays(3), // dynamische array: standaard 3 dagen
       monitoringDays: 3,
       minPostopMAP: null,
       durationBelowMAP75: null,
       durationBelowMAP65: null
     },
 
-    // Provenance tracking — per section: 'manual' | 'import' | 'fhir'
+    // Provenance tracking: per section: 'manual' | 'import' | 'fhir'
     dataSource: {
       identification: 'manual',
       encounter: 'manual',
@@ -1499,9 +1499,9 @@ const DemoRepository = {
       monitoring: {
         monitoringDays: 7,
         days: [
-          { troponin: 45,  map: 62, hr: 95,  notes: 'Postop instabiliteit — vasopressoren gestart' },
-          { troponin: 185, map: 65, hr: 102, notes: 'Troponine significant gestegen — cardioloog geïnformeerd' },
-          { troponin: 230, map: 68, hr: 98,  notes: 'Cardiologie geconsulteerd — ECG verricht' },
+          { troponin: 45,  map: 62, hr: 95,  notes: 'Postop instabiliteit: vasopressoren gestart' },
+          { troponin: 185, map: 65, hr: 102, notes: 'Troponine significant gestegen: cardioloog geïnformeerd' },
+          { troponin: 230, map: 68, hr: 98,  notes: 'Cardiologie geconsulteerd: ECG verricht' },
           { troponin: 195, map: 72, hr: 90,  notes: 'Licht dalend' },
           { troponin: 160, map: 74, hr: 86,  notes: '' },
           { troponin: 130, map: 76, hr: 82,  notes: 'Verder dalend' },
@@ -1565,7 +1565,7 @@ const RuleEngine = {
   // Serial troponin analysis: peak classification + MINS delta + trend
   // MINS definition: Thygesen 2018 / VISION study / Mol 2024
   evaluateTroponinRisk(patient) {
-    // Dynamic array — supports 1–30 configured monitoring days
+    // Dynamic array: supports 1–30 configured monitoring days
     const monDays = patient.monitoring.days || [];
     const rawValues = monDays.map(d => d?.troponin); // alle waarden incl. null
     const presentValues = rawValues
@@ -1593,7 +1593,7 @@ const RuleEngine = {
           if (risePct >= 20 && n >= 14) {
             minsCriteriumMet = true;
             flags.push(
-              `MINS-criterium: hs-TnT stijging ≥20% boven preop baseline (dag ${idx}: +${Math.round(risePct)}% — van ${preop} naar ${n} ng/L) | Thygesen 2018 / Mol 2024, H2`
+              `MINS-criterium: hs-TnT stijging ≥20% boven preop baseline (dag ${idx}: +${Math.round(risePct)}%: van ${preop} naar ${n} ng/L) | Thygesen 2018 / Mol 2024, H2`
             );
           }
         }
@@ -1603,16 +1603,16 @@ const RuleEngine = {
     // Absolute peak classification
     if (peak >= 150) {
       level = 'zeer hoog risico'; color = 'red';
-      flags.push('hs-TnT piekwaarde ≥ 150 ng/L — voldoet aan drempel voor MINS | 1-jr MACE: 40.6%, mortaliteit: 46.5% (Mol 2024, H6)');
+      flags.push('hs-TnT piekwaarde ≥ 150 ng/L: voldoet aan drempel voor MINS | 1-jr MACE: 40.6%, mortaliteit: 46.5% (Mol 2024, H6)');
     } else if (peak >= 50) {
       level = 'verhoogd risico'; color = 'orange';
-      flags.push('hs-TnT piekwaarde 50–149 ng/L — relevante myocardiale schade | 1-jr MACE: 10.4% (Mol 2024, H6)');
+      flags.push('hs-TnT piekwaarde 50–149 ng/L: relevante myocardiale schade | 1-jr MACE: 10.4% (Mol 2024, H6)');
     } else if (peak >= 14) {
       level = 'aandacht vereist'; color = 'amber';
-      flags.push('hs-TnT piekwaarde 14–49 ng/L — verhoogde aandacht, trend verplicht | 1-jr MACE: 6.1% (Mol 2024, H6)');
+      flags.push('hs-TnT piekwaarde 14–49 ng/L: verhoogde aandacht, trend verplicht | 1-jr MACE: 6.1% (Mol 2024, H6)');
     } else {
       level = 'normaal bereik'; color = 'green';
-      flags.push('hs-TnT piekwaarde < 14 ng/L — binnen referentiewaarde | 1-jr MACE: 3.4% (Mol 2024, H6)');
+      flags.push('hs-TnT piekwaarde < 14 ng/L: binnen referentiewaarde | 1-jr MACE: 3.4% (Mol 2024, H6)');
     }
 
     // MINS delta overrides level/color if stricter
@@ -1623,10 +1623,10 @@ const RuleEngine = {
       // MINS-specifieke uitkomstdata (VISION studie / Mol 2024, H2)
       // Ongeacht absolute piekwaarde: ≥20% stijging = verhoogd 30-dgs en 1-jr risico
       flags.push('MINS-uitkomst: 30-dgs MACE ~9.8%, 1-jr mortaliteit verhoogd ongeacht absolute piekwaarde | VISION studie (N=15.065) / Mol 2024, H2');
-      flags.push('MINS is in >90% van gevallen asymptomatisch — klinische beoordeling essentieel (Devereaux 2017, JAMA)');
+      flags.push('MINS is in >90% van gevallen asymptomatisch: klinische beoordeling essentieel (Devereaux 2017, JAMA)');
     }
 
-    // Trend (last two available values) — only when delta criterion not already dominant
+    // Trend (last two available values): only when delta criterion not already dominant
     let trend = null;
     if (presentValues.length >= 2) {
       const last = presentValues[presentValues.length - 1];
@@ -1636,11 +1636,11 @@ const RuleEngine = {
 
       if (!minsCriteriumMet && delta > 0 && pct > 15) {
         trend = 'stijgend';
-        flags.push('Stijgende troponinetrend (>' + Math.round(pct) + '%) — urgentie verhoogd');
+        flags.push('Stijgende troponinetrend (>' + Math.round(pct) + '%): urgentie verhoogd');
         if (color === 'amber') color = 'orange';
       } else if (delta < 0 && last >= 14) {
         trend = 'dalend maar afwijkend';
-        flags.push('Dalende trend maar waarden nog afwijkend — monitoring continueren');
+        flags.push('Dalende trend maar waarden nog afwijkend: monitoring continueren');
       } else if (delta < 0 && last < 14) {
         trend = 'normaliserend';
       } else {
@@ -1659,23 +1659,23 @@ const RuleEngine = {
 
     if (m.minPostopMAP !== null && m.minPostopMAP !== '') {
       const map = Number(m.minPostopMAP);
-      if (map < 65) { score += 3; flags.push('Laagste postop MAP < 65 mmHg — hemodynamisch kritisch (Mol 2024, H5)'); }
-      else if (map < 75) { score += 2; flags.push('Laagste postop MAP < 75 mmHg — hemodynamische aandacht vereist (Mol 2024, H5)'); }
+      if (map < 65) { score += 3; flags.push('Laagste postop MAP < 65 mmHg: hemodynamisch kritisch (Mol 2024, H5)'); }
+      else if (map < 75) { score += 2; flags.push('Laagste postop MAP < 75 mmHg: hemodynamische aandacht vereist (Mol 2024, H5)'); }
     }
 
     if (m.durationBelowMAP65 !== null && m.durationBelowMAP65 !== '') {
       const dur = Number(m.durationBelowMAP65);
       // Mol 2024 H5: duur MAP <60 mmHg 2-4u: aOR 3.26 (95%CI 1.57-6.48) voor myocardschade
-      if (dur > 60) { score += 3; flags.push('MAP < 65 gedurende ' + dur + ' min — sterk verhoogd risico myocardschade (Mol 2024, H5: aOR 3.26 bij >2u <60 mmHg)'); }
-      else if (dur > 20) { score += 2; flags.push('MAP < 65 gedurende ' + dur + ' min — aanhoudende hypotensie, onafh. risicofactor myocardschade (Mol 2024, H5)'); }
+      if (dur > 60) { score += 3; flags.push('MAP < 65 gedurende ' + dur + ' min: sterk verhoogd risico myocardschade (Mol 2024, H5: aOR 3.26 bij >2u <60 mmHg)'); }
+      else if (dur > 20) { score += 2; flags.push('MAP < 65 gedurende ' + dur + ' min: aanhoudende hypotensie, onafh. risicofactor myocardschade (Mol 2024, H5)'); }
       else if (dur > 0) { score += 1; flags.push('MAP < 65 gedurende ' + dur + ' min (Mol 2024, H5)'); }
     }
 
     if (m.durationBelowMAP75 !== null && m.durationBelowMAP75 !== '') {
       const dur = Number(m.durationBelowMAP75);
       // Mol 2024 H5: duur MAP <75 mmHg >635 min: aOR 2.68 (95%CI 1.46-5.07) voor myocardschade
-      if (dur > 635) { score += 2; flags.push('MAP < 75 gedurende ' + dur + ' min — aOR 2.68 voor myocardschade (Mol 2024, H5: 95%CI 1.46–5.07)'); }
-      else if (dur > 90) { score += 1; flags.push('MAP < 75 gedurende ' + dur + ' min — aandachtspunt (Mol 2024, H5)'); }
+      if (dur > 635) { score += 2; flags.push('MAP < 75 gedurende ' + dur + ' min: aOR 2.68 voor myocardschade (Mol 2024, H5: 95%CI 1.46–5.07)'); }
+      else if (dur > 90) { score += 1; flags.push('MAP < 75 gedurende ' + dur + ' min: aandachtspunt (Mol 2024, H5)'); }
     }
 
     let level, color;
@@ -1711,51 +1711,51 @@ const RuleEngine = {
 
       // MINS-protocol gaat vóór absolute drempelwaarden
       if (troponin.minsCriteriumMet) {
-        recs.push({ priority: 'urgent', text: 'MINS vastgesteld: informeer cardioloog binnen 24 uur — MINS is in >90% asymptomatisch maar verhoogt 30-dgs MACE significant (VISION studie)' });
-        recs.push({ priority: 'urgent', text: 'Verricht serieel ECG (dag 1, dag 2, dag 3) — sluit ischemie/new LBBB uit' });
+        recs.push({ priority: 'urgent', text: 'MINS vastgesteld: informeer cardioloog binnen 24 uur: MINS is in >90% asymptomatisch maar verhoogt 30-dgs MACE significant (VISION studie)' });
+        recs.push({ priority: 'urgent', text: 'Verricht serieel ECG (dag 1, dag 2, dag 3): sluit ischemie/new LBBB uit' });
         recs.push({ priority: 'urgent', text: 'Herhaal troponinebepaling elke 24u tot dalende trend ≤2 opeenvolgende metingen' });
         recs.push({ priority: 'hoog', text: 'Overweeg transthoracale echocardiografie bij aanhoudende stijging of hemodynamische instabiliteit' });
         recs.push({ priority: 'hoog', text: 'Beoordeel medicatielijst: aspirine/anticoagulantia heropstarten conform cardiologieadvies' });
-        recs.push({ priority: 'hoog', text: 'Documenteer MINS in ontslagbrief — verhoogd risico op MACE blijft aanwezig tot 1 jaar postoperatief (Mol 2024, H2)' });
+        recs.push({ priority: 'hoog', text: 'Documenteer MINS in ontslagbrief: verhoogd risico op MACE blijft aanwezig tot 1 jaar postoperatief (Mol 2024, H2)' });
         upgrade('orange');
       } else if (troponin.peak >= 150 || (troponin.peak >= 50 && troponin.trend === 'stijgend')) {
-        recs.push({ priority: 'urgent', text: 'Overweeg onmiddellijk cardiologieconsult — piekwaarde troponine significant verhoogd (≥150 ng/L)' });
+        recs.push({ priority: 'urgent', text: 'Overweeg onmiddellijk cardiologieconsult: piekwaarde troponine significant verhoogd (≥150 ng/L)' });
         recs.push({ priority: 'urgent', text: 'Herhaal troponinebepaling binnen 4–6 uur' });
         recs.push({ priority: 'urgent', text: 'Verricht 12-kanaals ECG en klinische beoordeling' });
         recs.push({ priority: 'urgent', text: 'Overweeg transthoracale echocardiografie' });
         upgrade('red');
       } else if (troponin.peak >= 50) {
-        recs.push({ priority: 'hoog', text: 'Herhaal troponinebepaling dag 2 en dag 3 — serieel patroon bepalend voor MINS-classificatie' });
+        recs.push({ priority: 'hoog', text: 'Herhaal troponinebepaling dag 2 en dag 3: serieel patroon bepalend voor MINS-classificatie' });
         recs.push({ priority: 'hoog', text: 'Verricht klinische beoordeling op cardiale symptomen (pijn, dyspnoe, ritmestoornissen)' });
         recs.push({ priority: 'hoog', text: 'Verricht ECG en overweeg cardiologieconsult' });
         upgrade('orange');
       } else if (troponin.peak >= 14) {
-        recs.push({ priority: 'matig', text: 'Herhaal troponinebepaling dag 2 — trend bepaalt of MINS-criterium van toepassing is' });
+        recs.push({ priority: 'matig', text: 'Herhaal troponinebepaling dag 2: trend bepaalt of MINS-criterium van toepassing is' });
         recs.push({ priority: 'matig', text: 'Overweeg ECG bij nieuwe klachten; beoordeel preop baseline als referentie' });
         upgrade('amber');
       }
     } else {
-      recs.push({ priority: 'matig', text: 'Start troponinebepaling dag 0 en dag 1 conform protocol — preop baseline essentieel voor MINS-detectie' });
+      recs.push({ priority: 'matig', text: 'Start troponinebepaling dag 0 en dag 1 conform protocol: preop baseline essentieel voor MINS-detectie' });
       upgrade('amber');
     }
 
     // Hemodynamic recommendations
     if (hemodynamic.level === 'hemodynamisch kritisch') {
-      recs.push({ priority: 'urgent', text: 'Beoordeel hemodynamische stabiliteit — aanhoudende postop hypotensie vastgesteld' });
+      recs.push({ priority: 'urgent', text: 'Beoordeel hemodynamische stabiliteit: aanhoudende postop hypotensie vastgesteld' });
       recs.push({ priority: 'urgent', text: 'Evalueer relatie hypotensie en myocardiale schade' });
       upgrade('red');
     } else if (hemodynamic.level === 'hemodynamisch instabiel') {
-      recs.push({ priority: 'hoog', text: 'Monitor hemodynamische stabiliteit nauwkeurig — MAP herhaling vereist' });
+      recs.push({ priority: 'hoog', text: 'Monitor hemodynamische stabiliteit nauwkeurig: MAP herhaling vereist' });
       upgrade('orange');
     } else if (hemodynamic.level === 'hemodynamische aandacht') {
       recs.push({ priority: 'matig', text: 'Monitor bloeddruk frequent in eerste 24–48u postop' });
       upgrade('amber');
     }
 
-    // Baseline risk — follow-up planning
+    // Baseline risk: follow-up planning
     if (baseline.level === 'hoog' || baseline.level === 'verhoogd') {
       if (troponin.minsCriteriumMet) {
-        recs.push({ priority: 'urgent', text: 'Plan cardiologische polikliniek binnen 4–6 weken na ontslag — MINS verhoogt 1-jr MACE risico ongeacht absolute piekwaarde (Mol 2024, H2)' });
+        recs.push({ priority: 'urgent', text: 'Plan cardiologische polikliniek binnen 4–6 weken na ontslag: MINS verhoogt 1-jr MACE risico ongeacht absolute piekwaarde (Mol 2024, H2)' });
       } else if (troponin.peak !== null && troponin.peak >= 14) {
         recs.push({ priority: 'hoog', text: 'Plan cardiologische follow-up binnen 3 maanden na ontslag' });
       } else {
@@ -1765,7 +1765,7 @@ const RuleEngine = {
 
     // Betablokker-advies (Mol 2024, H4: N=1468 matched pairs)
     if (patient.medications && patient.medications.betaBlocker) {
-      recs.push({ priority: 'laag', text: 'Continueer chronische betablokkers perioperatief — niet geassocieerd met verhoogde intraoperatieve hypotensie of adverse events (Mol 2024, H4: N=1468 matched pairs, P>0.05)' });
+      recs.push({ priority: 'laag', text: 'Continueer chronische betablokkers perioperatief: niet geassocieerd met verhoogde intraoperatieve hypotensie of adverse events (Mol 2024, H4: N=1468 matched pairs, P>0.05)' });
     }
 
     // Default low risk recommendation
@@ -1983,7 +1983,7 @@ const UI = {
     const { baseline, troponin, hemodynamic, recommendations, overallColor, overallUrgency } = result;
 
     const colorIcons = { green: '&#9899;', amber: '&#9888;', orange: '&#9888;', red: '&#9888;', gray: '&#9898;' };
-    const urgencyLabels = { laag: 'Laag — standaard monitoring', matig: 'Matig — verhoogde aandacht', hoog: 'Hoog — actie vereist', urgent: 'Urgent — onmiddellijke actie' };
+    const urgencyLabels = { laag: 'Laag: standaard monitoring', matig: 'Matig: verhoogde aandacht', hoog: 'Hoog: actie vereist', urgent: 'Urgent: onmiddellijke actie' };
 
     const trendLabel = { stijgend: '&#8679; stijgend', 'dalend maar afwijkend': '&#8681; dalend (nog afwijkend)', normaliserend: '&#8681; normaliserend', stabiel: '&#8596; stabiel' };
 
@@ -2023,7 +2023,7 @@ const UI = {
 
       <div class="card">
         <div class="card-title"><span class="card-title-icon">&#9998;</span> Aanbevelingen</div>
-        <p class="text-sm text-muted mb-12">Beslisondersteuning — geen diagnostische of therapeutische orders. Klinisch oordeel van de behandelaar blijft leidend.</p>
+        <p class="text-sm text-muted mb-12">Beslisondersteuning: geen diagnostische of therapeutische orders. Klinisch oordeel van de behandelaar blijft leidend.</p>
         <div class="rec-list">
           ${recommendations.map(r => `
             <div class="rec-item ${r.priority}">
@@ -2039,7 +2039,7 @@ const UI = {
     const { baseline, troponin, hemodynamic, recommendations, overallUrgency } = result;
 
     const geslacht = { M: 'man', V: 'vrouw', X: 'onbekend geslacht' }[p.gender] || '';
-    const urgencyNL = { laag: 'laag perioperatief cardiaal risico', matig: 'matig verhoogd perioperatief cardiaal risico', hoog: 'hoog perioperatief cardiaal risico', urgent: 'urgent perioperatief cardiaal risico — onmiddellijke aandacht vereist' };
+    const urgencyNL = { laag: 'laag perioperatief cardiaal risico', matig: 'matig verhoogd perioperatief cardiaal risico', hoog: 'hoog perioperatief cardiaal risico', urgent: 'urgent perioperatief cardiaal risico: onmiddellijke aandacht vereist' };
 
     const conditions = Object.entries(p.conditions)
       .filter(([, v]) => v)
@@ -2069,7 +2069,7 @@ const UI = {
       return molOutcomeMap.kritisch;
     };
     const troponinLine = troponin.peak !== null
-      ? `hs-TnT piekwaarde ${troponin.peak} ng/L (${troponin.level}${troponin.trend ? ', ' + (trendMap[troponin.trend] || troponin.trend) : ''}) — ${getMolOutcomeLine(troponin.peak, troponin.minsCriteriumMet)} (Mol 2024, H6; N=3085)`
+      ? `hs-TnT piekwaarde ${troponin.peak} ng/L (${troponin.level}${troponin.trend ? ', ' + (trendMap[troponin.trend] || troponin.trend) : ''}): ${getMolOutcomeLine(troponin.peak, troponin.minsCriteriumMet)} (Mol 2024, H6; N=3085)`
       : 'Troponinebepalingen nog niet ingevoerd';
 
     const hemoLine = hemodynamic.flags.length > 0
@@ -2087,8 +2087,8 @@ const UI = {
     const summaryText =
 `PERIOPERATIEVE CARDIALE RISICOBEOORDELING
 Gegenereerd: ${now}
-Systeem: Perioperatief Cardiaal Risico Werkbank v0.1 (beslisondersteuning, niet diagnostisch)
-Wetenschappelijke basis: Mol KH. The cardiac risk of noncardiac surgery: from biomarker to event. Proefschrift Erasmus Universiteit Rotterdam, 2024.
+Systeem: Cardiac Risk Monitor v0.1 (beslisondersteuning, niet diagnostisch)
+Wetenschappelijke basis: Dr. K.H. Mol. The cardiac risk of noncardiac surgery: from biomarker to event. Proefschrift Erasmus Universiteit Rotterdam, 2024.
 
 PATIËNTCONTEXT
 Patiënt: ${p.firstName} ${p.lastName} | ${p.age} jaar | ${geslacht} | Dossier: ${p.dossierID || 'onbekend'}
@@ -2117,7 +2117,7 @@ Het systeem is conceptueel en niet bedoeld als zelfstandig diagnostisch of thera
 Het klinisch oordeel van de behandelend arts blijft te allen tijde leidend.
 
 BRONVERWIJZING
-Mol KH. The cardiac risk of noncardiac surgery: from biomarker to event.
+Dr. K.H. Mol. The cardiac risk of noncardiac surgery: from biomarker to event.
 Proefschrift Erasmus Universiteit Rotterdam, 6 februari 2024. ISBN 978-94-6483-731-5.
 Troponine-drempelwaarden en uitkomstdata: Mol 2024, Hoofdstuk 6 (N=3085 patiënten).
 Hemodynamische drempelwaarden: Mol 2024, Hoofdstuk 5 (N=1710 patiënten).
@@ -2223,7 +2223,7 @@ function syncMonitor(key, value) {
   updateJsonPreview();
 }
 
-// Replaced by syncDayMonitorByIndex — kept as no-op for safety
+// Replaced by syncDayMonitorByIndex: kept as no-op for safety
 function syncDayMonitor(day, key, value) {}
 
 function syncDayMonitorByIndex(index, key, value) {
@@ -2321,7 +2321,7 @@ function loadDemo(id) {
   // Show banner in patient-form view instead of blocking alert
   const banner = document.getElementById('demo-load-banner');
   if (banner) {
-    banner.textContent = `✓ Demo-casus geladen: ${p.firstName} ${p.lastName} — velden ingevuld via EPD-simulatie`;
+    banner.textContent = `✓ Demo-casus geladen: ${p.firstName} ${p.lastName}: velden ingevuld via EPD-simulatie`;
     banner.style.display = 'block';
     setTimeout(() => { banner.style.display = 'none'; }, 3000);
   }
@@ -2368,7 +2368,7 @@ function updatePreopTnInterpretation(val) {
   const v = parseFloat(val);
   if (isNaN(v) || val === '') { el.textContent = ''; el.style.color = ''; return; }
   if (v > 14) {
-    el.innerHTML = '&#9888; Verhoogd (>99e percentiel) — in vaatchirurgiecohort had 56% hs-TnT >14 ng/L, waarvan 50% significante obstructieve CAD bij angiografie <span style="opacity:0.7;">(Mol 2024, H2)</span>';
+    el.innerHTML = '&#9888; Verhoogd (>99e percentiel): in vaatchirurgiecohort had 56% hs-TnT >14 ng/L, waarvan 50% significante obstructieve CAD bij angiografie <span style="opacity:0.7;">(Mol 2024, H2)</span>';
     el.style.color = 'var(--orange)';
   } else {
     el.innerHTML = '&#10003; Binnen referentiewaarde (≤14 ng/L = 99e percentiel) <span style="opacity:0.7;">(Mol 2024, H2)</span>';
@@ -2514,7 +2514,7 @@ function buildPatientFromCSVRow(row, rowIndex) {
   const patientId = row['patient_id'] || ('CSV-' + Date.now() + '-' + rowIndex);
 
   // Build monitoring days from CSV columns dag1..dag3
-  const days = [{ troponin: null, map: null, hr: null, notes: '' }]; // dag 0 — niet in CSV
+  const days = [{ troponin: null, map: null, hr: null, notes: '' }]; // dag 0: niet in CSV
   for (let d = 1; d <= 3; d++) {
     const tn  = parseNum(row[`dag${d}_tnt`] || row[`dag${d}_troponin`] || row[`dag${d}_hs-tnt`]);
     const map = parseNum(row[`dag${d}_map`]);
@@ -2599,16 +2599,16 @@ function runCSVImport(csvText, fileName) {
       div.classList.add('success');
       const riskLabel = { green: 'Laag', amber: 'Verhoogd', orange: 'Hoog', red: 'Urgent', gray: '—' };
       const riskResult = RuleEngine.evaluateBaselineRisk(result.patient);
-      div.textContent = `✓ Rij ${i + 1} — ${result.patient.lastName} | ${result.patient.age} jr | Baselinerisico: ${riskLabel[riskResult.color] || riskResult.level}`;
+      div.textContent = `✓ Rij ${i + 1}: ${result.patient.lastName} | ${result.patient.age} jr | Baselinerisico: ${riskLabel[riskResult.color] || riskResult.level}`;
     } else {
       fail++;
       div.classList.add('error');
-      div.textContent = `✗ Rij ${i + 1} — ${result.errors.join(', ')}`;
+      div.textContent = `✗ Rij ${i + 1}: ${result.errors.join(', ')}`;
     }
     list.appendChild(div);
   });
 
-  status.textContent = `Klaar: ${ok} patiënten geïmporteerd${fail > 0 ? `, ${fail} rijen overgeslagen` : ''} — uit "${fileName}"`;
+  status.textContent = `Klaar: ${ok} patiënten geïmporteerd${fail > 0 ? `, ${fail} rijen overgeslagen` : ''}: uit "${fileName}"`;
   fill.style.width = '100%';
   UI.renderDashboard();
   showToast(`${ok} patiënten geïmporteerd uit ${fileName}`, false);
