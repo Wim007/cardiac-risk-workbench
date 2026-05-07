@@ -1186,6 +1186,28 @@
             <label class="form-label">Duur MAP &lt; 65 (minuten)</label>
             <input class="form-input" id="m-dur65" type="number" placeholder="bijv. 15" oninput="syncMonitor('durationBelowMAP65', +this.value)">
           </div>
+          <div class="form-group">
+            <label class="form-label" style="display:flex;align-items:center;gap:6px">
+              Max hartslag postop (bpm)
+              <span style="font-size:10px;background:var(--blue-50);color:var(--blue-600);border-radius:3px;padding:1px 5px;font-weight:600">H3</span>
+            </label>
+            <input class="form-input" id="m-maxHR" type="number" placeholder="bijv. 95" oninput="syncMonitor('maxPostopHR', +this.value)">
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="display:flex;align-items:center;gap:6px">
+              Duur tachycardie HR>90 (min)
+              <span style="font-size:10px;background:var(--blue-50);color:var(--blue-600);border-radius:3px;padding:1px 5px;font-weight:600">H3</span>
+            </label>
+            <input class="form-input" id="m-durTachy" type="number" placeholder="bijv. 35" oninput="syncMonitor('durationTachycardie', +this.value)">
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="display:flex;align-items:center;gap:6px">
+              SIOHT-duur (min)
+              <span style="font-size:10px;background:var(--orange-50,#fff7ed);color:#c2410c;border-radius:3px;padding:1px 5px;font-weight:600">H3</span>
+            </label>
+            <div style="font-size:10px;color:var(--slate-400);margin-bottom:4px">Gelijktijdige hypotensie + tachycardie (MAP&lt;65 + HR>90)</div>
+            <input class="form-input" id="m-sioht" type="number" placeholder="bijv. 22" oninput="syncMonitor('siohTMinuten', +this.value)">
+          </div>
         </div>
       </div>
 
@@ -1428,7 +1450,10 @@ function createEmptyPatient() {
       monitoringDays: 3,
       minPostopMAP: null,
       durationBelowMAP75: null,
-      durationBelowMAP65: null
+      durationBelowMAP65: null,
+      maxPostopHR: null,
+      durationTachycardie: null,
+      siohTMinuten: null
     },
 
     // Provenance tracking: per section: 'manual' | 'import' | 'fhir'
@@ -1466,7 +1491,8 @@ const DemoRepository = {
           { troponin: 11, map: 85, hr: 70, notes: '' },
           { troponin: 10, map: 88, hr: 68, notes: '' },
         ],
-        minPostopMAP: 79, durationBelowMAP75: 0, durationBelowMAP65: 0
+        minPostopMAP: 79, durationBelowMAP75: 0, durationBelowMAP65: 0,
+        maxPostopHR: 74, durationTachycardie: 0, siohTMinuten: 0
       },
       dataSource: { identification: 'import', encounter: 'import', conditions: 'import', medications: 'import', labValues: 'import', monitoring: 'manual' }
     },
@@ -1485,7 +1511,8 @@ const DemoRepository = {
           { troponin: 42, map: 75, hr: 80, notes: '' },
           { troponin: 38, map: 78, hr: 78, notes: 'Licht dalend' },
         ],
-        minPostopMAP: 68, durationBelowMAP75: 45, durationBelowMAP65: 10
+        minPostopMAP: 68, durationBelowMAP75: 45, durationBelowMAP65: 10,
+        maxPostopHR: 88, durationTachycardie: 15, siohTMinuten: 8
       },
       dataSource: { identification: 'import', encounter: 'import', conditions: 'import', medications: 'import', labValues: 'import', monitoring: 'manual' }
     },
@@ -1507,7 +1534,8 @@ const DemoRepository = {
           { troponin: 130, map: 76, hr: 82,  notes: 'Verder dalend' },
           { troponin: 98,  map: 78, hr: 80,  notes: 'Onder 150 ng/L' },
         ],
-        minPostopMAP: 58, durationBelowMAP75: 180, durationBelowMAP65: 95
+        minPostopMAP: 58, durationBelowMAP75: 180, durationBelowMAP65: 95,
+        maxPostopHR: 102, durationTachycardie: 45, siohTMinuten: 32
       },
       dataSource: { identification: 'import', encounter: 'import', conditions: 'import', medications: 'import', labValues: 'import', monitoring: 'manual' }
     }
@@ -1678,6 +1706,32 @@ const RuleEngine = {
       else if (dur > 90) { score += 1; flags.push('MAP < 75 gedurende ' + dur + ' min: aandachtspunt (Mol 2024, H5)'); }
     }
 
+    // H3: Tachycardie >90 bpm als zelfstandige risicofactor (Mol 2024, H3)
+    if (m.maxPostopHR !== null && m.maxPostopHR !== '') {
+      const hr = Number(m.maxPostopHR);
+      if (hr > 90) { score += 1; flags.push('Tachycardie: max hartslag ' + hr + ' bpm (>90 bpm: zelfstandige risicofactor myocardschade, Mol 2024, H3)'); }
+    }
+
+    if (m.durationTachycardie !== null && m.durationTachycardie !== '') {
+      const dur = Number(m.durationTachycardie);
+      // Mol 2024 H3: tachycardie >31 min: aOR 2.69 (95%CI 1.85-3.90)
+      if (dur > 31) { score += 2; flags.push('Tachycardie HR>90 bpm gedurende ' + dur + ' min: aOR 2.69 voor myocardschade (Mol 2024, H3: 95%CI 1.85–3.90)'); }
+      else if (dur > 10) { score += 1; flags.push('Tachycardie HR>90 bpm gedurende ' + dur + ' min: aandachtspunt (Mol 2024, H3)'); }
+    }
+
+    // H3: SIOHT — Simultaneous Hypotension and Tachycardia (sterkste hemodynamische predictor)
+    if (m.siohTMinuten !== null && m.siohTMinuten !== '') {
+      const dur = Number(m.siohTMinuten);
+      // Mol 2024 H3: SIOHT >19 min: aOR 4.18 (95%CI 2.42-7.14); 30-dgs mortaliteit 6.5% vs 1.5%
+      if (dur > 19) {
+        score += 3;
+        flags.push('SIOHT vastgesteld: gelijktijdige hypotensie + tachycardie gedurende ' + dur + ' min — aOR 4.18 voor myocardschade, 30-dgs mortaliteit 6.5% vs 1.5% (Mol 2024, H3: 95%CI 2.42–7.14)');
+      } else if (dur > 0) {
+        score += 2;
+        flags.push('SIOHT aanwezig: gelijktijdige hypotensie + tachycardie gedurende ' + dur + ' min: onafhankelijke predictor myocardschade (Mol 2024, H3)');
+      }
+    }
+
     let level, color;
     if (score === 0) { level = 'hemodynamisch stabiel'; color = 'green'; }
     else if (score <= 2) { level = 'hemodynamische aandacht'; color = 'amber'; }
@@ -1743,6 +1797,10 @@ const RuleEngine = {
     if (hemodynamic.level === 'hemodynamisch kritisch') {
       recs.push({ priority: 'urgent', text: 'Beoordeel hemodynamische stabiliteit: aanhoudende postop hypotensie vastgesteld' });
       recs.push({ priority: 'urgent', text: 'Evalueer relatie hypotensie en myocardiale schade' });
+      // SIOHT specifiek
+      if (patient.monitoring.siohTMinuten > 19) {
+        recs.push({ priority: 'urgent', text: 'SIOHT vastgesteld (>19 min): sterkste hemodynamische predictor — aOR 4.18, 30-dgs mortaliteit 6.5% vs 1.5%. Overweeg direct cardioloogconsult (Mol 2024, H3)' });
+      }
       upgrade('red');
     } else if (hemodynamic.level === 'hemodynamisch instabiel') {
       recs.push({ priority: 'hoog', text: 'Monitor hemodynamische stabiliteit nauwkeurig: MAP herhaling vereist' });
@@ -1976,6 +2034,9 @@ const UI = {
     document.getElementById('m-minMAP').value = m.minPostopMAP !== null && m.minPostopMAP !== undefined ? m.minPostopMAP : '';
     document.getElementById('m-dur75').value = m.durationBelowMAP75 !== null && m.durationBelowMAP75 !== undefined ? m.durationBelowMAP75 : '';
     document.getElementById('m-dur65').value = m.durationBelowMAP65 !== null && m.durationBelowMAP65 !== undefined ? m.durationBelowMAP65 : '';
+    document.getElementById('m-maxHR').value = m.maxPostopHR !== null && m.maxPostopHR !== undefined ? m.maxPostopHR : '';
+    document.getElementById('m-durTachy').value = m.durationTachycardie !== null && m.durationTachycardie !== undefined ? m.durationTachycardie : '';
+    document.getElementById('m-sioht').value = m.siohTMinuten !== null && m.siohTMinuten !== undefined ? m.siohTMinuten : '';
   },
 
   renderAlerts(p) {
@@ -2076,6 +2137,19 @@ const UI = {
       ? hemodynamic.flags.join('; ')
       : 'Geen hemodynamische aandachtspunten vastgesteld';
 
+    // H7: HRQoL verwachting op basis van troponine-categorie (Mol 2024, H7; N=1297)
+    const getHRQoLLine = (peak, minsCriteriumMet) => {
+      if (peak === null) return null;
+      if (minsCriteriumMet || peak >= 150) return { score: '0.71', delta: '-0.18 (95%CI -0.29 tot -0.07)', label: 'significant verlaagde kwaliteit van leven verwacht op 1 jaar' };
+      if (peak >= 50)  return { score: '0.77', delta: '-0.11 (95%CI -0.18 tot -0.04)', label: 'verlaagde kwaliteit van leven verwacht op 1 jaar' };
+      if (peak >= 14)  return { score: '0.81', delta: '-0.06 (95%CI -0.09 tot -0.02)', label: 'licht verlaagde kwaliteit van leven mogelijk op 1 jaar' };
+      return { score: '0.85', delta: null, label: 'kwaliteit van leven vergelijkbaar met populatienorm' };
+    };
+    const hrqol = getHRQoLLine(troponin.peak, troponin.minsCriteriumMet);
+    const hrqolLine = hrqol
+      ? `Verwachte HRQoL op 1 jaar: ${hrqol.score} (mediaan)${hrqol.delta ? ', β ' + hrqol.delta : ''} — ${hrqol.label} (Mol 2024, H7; N=1297)`
+      : 'HRQoL-inschatting niet beschikbaar (troponinewaarden ontbreken)';
+
     const recLines = recommendations
       .map((r, i) => `${i+1}. [${r.priority.toUpperCase()}] ${r.text}`)
       .join('\n');
@@ -2089,6 +2163,7 @@ const UI = {
 Gegenereerd: ${now}
 Systeem: Cardiac Risk Monitor v0.1 (beslisondersteuning, niet diagnostisch)
 Wetenschappelijke basis: Dr. K.H. Mol. The cardiac risk of noncardiac surgery: from biomarker to event. Proefschrift Erasmus Universiteit Rotterdam, 2024.
+Verwerkte hoofdstukken: H2 (preop troponine), H3 (tachycardie/SIOHT), H4 (betablokkers), H5 (postop hypotensie), H6 (1-jr MACE/mortaliteit), H7 (HRQoL).
 
 PATIËNTCONTEXT
 Patiënt: ${p.firstName} ${p.lastName} | ${p.age} jaar | ${geslacht} | Dossier: ${p.dossierID || 'onbekend'}
@@ -2104,6 +2179,9 @@ ${troponinLine}
 
 HEMODYNAMISCHE AANDACHTSPUNTEN
 ${hemoLine}
+
+KWALITEIT VAN LEVEN (PROGNOSE 1 JAAR)
+${hrqolLine}
 
 SAMENVATTENDE URGENTIE-INSCHATTING
 ${(urgencyNL[overallUrgency] || overallUrgency).toUpperCase()}
