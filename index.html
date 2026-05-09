@@ -1353,6 +1353,27 @@
           <div class="demo-case-desc">P. Jansen, 78 jr, vasculaire chirurgie, troponinestijging + postop hypotensie</div>
         </div>
       </div>
+      <div class="demo-case-item" onclick="loadDemo('DEMO-004')">
+        <div class="demo-case-icon">&#128994;</div>
+        <div>
+          <div class="demo-case-name">Casus 4: Knieprothese – laag risico</div>
+          <div class="demo-case-desc">T. Smits, 62 jr, TKA links, alleen hypertensie, stabiel troponine</div>
+        </div>
+      </div>
+      <div class="demo-case-item" onclick="loadDemo('DEMO-005')">
+        <div class="demo-case-icon">&#128993;</div>
+        <div>
+          <div class="demo-case-name">Casus 5: Colonresectie – verhoogd risico</div>
+          <div class="demo-case-desc">A. van Dam, 72 jr, sigmoïdresectie, DM2 + nierinsufficiëntie, milde troponinstijging</div>
+        </div>
+      </div>
+      <div class="demo-case-item" onclick="loadDemo('DEMO-006')">
+        <div class="demo-case-icon">&#128308;</div>
+        <div>
+          <div class="demo-case-name">Casus 6: Heupfractuur spoedoperatie – hoog risico</div>
+          <div class="demo-case-desc">C. Visser, 81 jr, ORIF spoedoperatie, CVA-voorgeschiedenis + DM2, significante troponinstijging</div>
+        </div>
+      </div>
     </div>
     <div style="margin-top:16px;text-align:right;">
       <button class="btn btn-ghost btn-sm" onclick="closeDemoModal()">Sluiten</button>
@@ -1536,6 +1557,65 @@ const DemoRepository = {
         ],
         minPostopMAP: 58, durationBelowMAP75: 180, durationBelowMAP65: 95,
         maxPostopHR: 102, durationTachycardie: 45, siohTMinuten: 32
+      },
+      dataSource: { identification: 'import', encounter: 'import', conditions: 'import', medications: 'import', labValues: 'import', monitoring: 'manual' }
+    },
+    'DEMO-004': {
+      id: 'DEMO-004', firstName: 'T.', lastName: 'Smits', age: 62, gender: 'M',
+      dossierID: 'ZH-440231', source: 'demo',
+      encounter: { surgeryType: 'Knieprothese links (TKA)', surgeryRiskCategory: 'intermediate', emergencyProcedure: false, surgeryDate: '2026-05-05', ward: 'Orthopedie' },
+      conditions: { cad: false, priorMI: false, heartFailure: false, cerebrovascularDisease: false, peripheralVascularDisease: false, diabetes: false, renalDisease: false, hypertension: true },
+      medications: { betaBlocker: false, statin: true, anticoagulant: false, antiplatelet: false, aceInhibitor: true, notes: 'Ramipril 5mg, Atorvastatine 20mg' },
+      labValues: { preOpTroponin: 6, eGFR: 82, hemoglobin: 8.6, creatinine: 78 },
+      monitoring: {
+        monitoringDays: 2,
+        days: [
+          { troponin: 7, map: 88, hr: 68, notes: '' },
+          { troponin: 8, map: 86, hr: 70, notes: '' },
+        ],
+        minPostopMAP: 82, durationBelowMAP75: 0, durationBelowMAP65: 0,
+        maxPostopHR: 72, durationTachycardie: 0, siohTMinuten: 0
+      },
+      dataSource: { identification: 'import', encounter: 'import', conditions: 'import', medications: 'import', labValues: 'import', monitoring: 'manual' }
+    },
+    'DEMO-005': {
+      id: 'DEMO-005', firstName: 'A.', lastName: 'van Dam', age: 72, gender: 'V',
+      dossierID: 'ZH-550374', source: 'demo',
+      encounter: { surgeryType: 'Laparoscopische sigmoïdresectie', surgeryRiskCategory: 'intermediate', emergencyProcedure: false, surgeryDate: '2026-05-06', ward: 'Chirurgie' },
+      conditions: { cad: false, priorMI: false, heartFailure: false, cerebrovascularDisease: false, peripheralVascularDisease: false, diabetes: true, renalDisease: true, hypertension: true },
+      medications: { betaBlocker: false, statin: true, anticoagulant: false, antiplatelet: false, aceInhibitor: true, notes: 'Lisinopril 10mg, Rosuvastatine 20mg, Metformine (gestaakt preop)' },
+      labValues: { preOpTroponin: 9, eGFR: 52, hemoglobin: 7.5, creatinine: 118 },
+      monitoring: {
+        monitoringDays: 4,
+        days: [
+          { troponin: 14, map: 76, hr: 78, notes: '' },
+          { troponin: 22, map: 74, hr: 82, notes: 'Lichte stijging: verhoogde hydratiecontrole' },
+          { troponin: 19, map: 78, hr: 78, notes: '' },
+          { troponin: 15, map: 80, hr: 74, notes: 'Dalend, klinisch stabiel' },
+        ],
+        minPostopMAP: 72, durationBelowMAP75: 20, durationBelowMAP65: 0,
+        maxPostopHR: 84, durationTachycardie: 10, siohTMinuten: 0
+      },
+      dataSource: { identification: 'import', encounter: 'import', conditions: 'import', medications: 'import', labValues: 'import', monitoring: 'manual' }
+    },
+    'DEMO-006': {
+      id: 'DEMO-006', firstName: 'C.', lastName: 'Visser', age: 81, gender: 'V',
+      dossierID: 'ZH-660589', source: 'demo',
+      encounter: { surgeryType: 'Heupfractuur (ORIF, spoedoperatie)', surgeryRiskCategory: 'intermediate', emergencyProcedure: true, surgeryDate: '2026-05-07', ward: 'Orthopedie / IC' },
+      conditions: { cad: false, priorMI: false, heartFailure: false, cerebrovascularDisease: true, peripheralVascularDisease: false, diabetes: true, renalDisease: false, hypertension: true },
+      medications: { betaBlocker: false, statin: true, anticoagulant: true, antiplatelet: false, aceInhibitor: false, notes: 'Atorvastatine 40mg, Eliquis gestaakt 48u preop' },
+      labValues: { preOpTroponin: 12, eGFR: 61, hemoglobin: 7.2, creatinine: 98 },
+      monitoring: {
+        monitoringDays: 5,
+        days: [
+          { troponin: 28, map: 68, hr: 92, notes: 'Postoperatief hypotensie: IV vocht gegeven' },
+          { troponin: 65, map: 70, hr: 98, notes: 'Troponine stijging: cardioloog telefonisch geconsulteerd' },
+          { troponin: 88, map: 72, hr: 90, notes: 'Cardiologie geconsulteerd, ECG: geen STEMI' },
+          { troponin: 74, map: 76, hr: 82, notes: 'Langzaam dalend' },
+          { troponin: 55, map: 78, hr: 76, notes: 'Verdere daling, klinisch stabiel' },
+        ],
+        minPostopMAP: 64, durationBelowMAP75: 60, durationBelowMAP65: 15,
+        maxPostopHR: 98, durationTachycardie: 30, siohTMinuten: 12
       },
       dataSource: { identification: 'import', encounter: 'import', conditions: 'import', medications: 'import', labValues: 'import', monitoring: 'manual' }
     }
@@ -2820,7 +2900,7 @@ document.getElementById('demo-modal').addEventListener('click', function(e) {
 
 // ============================================================
 // INIT
-// Pre-load all 3 demo cases into session on startup
+// Pre-load all 6 demo cases into session on startup
 // ============================================================
 
 (function init() {
