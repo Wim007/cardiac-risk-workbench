@@ -1092,9 +1092,11 @@
           <div class="dropzone-sub">Alleen .csv bestanden &middot; Max. 500 rijen per import</div>
         </div>
         <input type="file" id="csv-file-input" accept=".csv" style="display:none" onchange="handleFileSelect(this)">
-        <div style="margin-top:12px;display:flex;gap:8px;align-items:center;">
+        <div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <button class="btn btn-secondary btn-sm" onclick="downloadCSVTemplate()">&#8615; Template downloaden</button>
           <span class="text-sm text-muted">Leeg sjabloon met de juiste kolomstructuur</span>
+          <button class="btn btn-primary btn-sm" onclick="downloadDemoCSV()">&#8615; 10 demo-patiënten downloaden</button>
+          <span class="text-sm text-muted">Klaar om direct te importeren</span>
         </div>
       </div>
 
@@ -2777,6 +2779,23 @@ function downloadCSVTemplate() {
   const example = 'PAT-001,67,M,Heupprothese,0,1,0,0,0,0,1,0,1,1,12,18,78,25,74,22,76';
   const csv = header + '\n' + example + '\n';
   triggerDownload(csv, 'cardiac-risk-import-template.csv', 'text/csv;charset=utf-8;');
+}
+
+function downloadDemoCSV() {
+  const csv = [
+    'patient_id,leeftijd,geslacht,operatietype,spoedoperatie,CAD,eerder_MI,hartfalen,cerebrovasculair,perifeer_vaataandoening,diabetes,nierziekte,hypertensie,beta_blokker,preop_TnT,dag1_TnT,dag1_MAP,dag2_TnT,dag2_MAP,dag3_TnT,dag3_MAP',
+    'NC-001 Pietersen,55,M,Laparoscopische cholecystectomie,0,0,0,0,0,0,0,0,1,0,6,7,86,8,84,,',
+    'NC-002 Hendriks,68,V,Knieprothese links (TKA),0,0,0,0,0,0,1,0,1,0,7,9,79,11,81,,',
+    'NC-003 van der Berg,74,M,Radicale prostatectomie,0,0,0,0,1,0,1,1,1,0,11,15,75,18,77,14,80',
+    'NC-004 Kuijpers,48,V,Mastectomie rechts,0,0,0,0,0,0,0,0,0,0,5,6,89,5,90,,',
+    'NC-005 Vermeer,63,M,Thyroidectomie totaal,0,0,0,0,0,0,0,0,1,0,8,9,84,8,86,,',
+    'NC-006 Brouwer,79,V,Liesbreuk reparatie,0,0,0,0,1,0,0,0,1,0,13,18,72,22,74,19,76',
+    'NC-007 Willems,56,M,Laparoscopische sigmoïdresectie,0,0,0,0,0,0,1,0,0,0,9,12,80,16,78,13,82',
+    'NC-008 de Groot,71,V,Heupprothese (THA),1,0,0,0,0,0,1,1,1,0,14,28,68,45,70,38,73',
+    'NC-009 Mulder,42,M,Appendectomie,1,0,0,0,0,0,0,0,0,0,4,5,91,4,92,,',
+    'NC-010 Oosterhout,66,V,Longkwabresectie rechtsonder,0,0,0,0,0,0,0,0,1,1,10,16,76,24,73,20,77',
+  ].join('\n') + '\n';
+  triggerDownload(csv, 'demo-patienten-niet-cardiaal.csv', 'text/csv;charset=utf-8;');
 }
 
 function clearImportedData() {
