@@ -986,6 +986,19 @@
             </select>
           </div>
           <div class="form-group">
+            <label class="form-label">ASA-classificatie <span class="source-badge source-manual">Handmatig</span></label>
+            <select class="form-select" id="f-asa" onchange="syncField('asaClassification', this.value)" title="Verplicht conform NVA-richtlijn Preoperatieve Screening. Wordt opgenomen in de artsensamenvatting.">
+              <option value="">-- selecteer --</option>
+              <option value="I">ASA I – Gezonde patiënt, geen systemische ziekte</option>
+              <option value="II">ASA II – Milde systemische ziekte (bijv. gecontroleerde hypertensie, DM2)</option>
+              <option value="III">ASA III – Ernstige systemische ziekte (bijv. hartfalen, slecht ingestelde DM)</option>
+              <option value="IV">ASA IV – Ernstige systemische ziekte, constante levensbedreiging</option>
+              <option value="V">ASA V – Moribunde patiënt, overleeft niet zonder operatie</option>
+              <option value="VI">ASA VI – Hersendood, orgaandonatie</option>
+            </select>
+            <div class="form-hint" style="font-size:11px;color:var(--slate-400);margin-top:4px;">Verplicht conform NVA-richtlijn Preoperatieve Screening</div>
+          </div>
+          <div class="form-group">
             <label class="form-label">Afdeling</label>
             <input class="form-input" id="f-ward" placeholder="Bijv. Vaatchirurgie" oninput="syncEncounter('ward', this.value)">
           </div>
@@ -1427,6 +1440,7 @@ function createEmptyPatient() {
     gender: '',
     dossierID: '',
     source: 'manual',
+    asaClassification: '',
 
     // FHIR: Encounter + Procedure
     encounter: {
@@ -1503,7 +1517,7 @@ const DemoRepository = {
   patients: {
     'DEMO-001': {
       id: 'DEMO-001', firstName: 'J.', lastName: 'Bakker', age: 58, gender: 'M',
-      dossierID: 'ZH-110042', source: 'demo',
+      dossierID: 'ZH-110042', source: 'demo', asaClassification: 'II',
       encounter: { surgeryType: 'Laparoscopische cholecystectomie', surgeryRiskCategory: 'low', emergencyProcedure: false, surgeryDate: '2026-05-01', ward: 'Chirurgie' },
       conditions: { cad: false, priorMI: false, heartFailure: false, cerebrovascularDisease: false, peripheralVascularDisease: false, diabetes: false, renalDisease: false, hypertension: true },
       medications: { betaBlocker: false, statin: true, anticoagulant: false, antiplatelet: false, aceInhibitor: true, notes: 'Lisinopril 10mg, Atorvastatine 20mg' },
@@ -1522,7 +1536,7 @@ const DemoRepository = {
     },
     'DEMO-002': {
       id: 'DEMO-002', firstName: 'M.', lastName: 'de Vries', age: 71, gender: 'V',
-      dossierID: 'ZH-220187', source: 'demo',
+      dossierID: 'ZH-220187', source: 'demo', asaClassification: 'III',
       encounter: { surgeryType: 'Heupprothese (THA)', surgeryRiskCategory: 'intermediate', emergencyProcedure: false, surgeryDate: '2026-05-02', ward: 'Orthopedie' },
       conditions: { cad: true, priorMI: false, heartFailure: false, cerebrovascularDisease: false, peripheralVascularDisease: false, diabetes: true, renalDisease: false, hypertension: true },
       medications: { betaBlocker: true, statin: true, anticoagulant: false, antiplatelet: true, aceInhibitor: false, notes: 'Metoprolol 50mg, Atorvastatine 40mg, Aspirine 80mg gestaakt preop' },
@@ -1542,7 +1556,7 @@ const DemoRepository = {
     },
     'DEMO-003': {
       id: 'DEMO-003', firstName: 'P.', lastName: 'Jansen', age: 78, gender: 'M',
-      dossierID: 'ZH-330095', source: 'demo',
+      dossierID: 'ZH-330095', source: 'demo', asaClassification: 'IV',
       encounter: { surgeryType: 'Aorta-bifemorale bypass', surgeryRiskCategory: 'high', emergencyProcedure: false, surgeryDate: '2026-05-03', ward: 'Vaatchirurgie / IC' },
       conditions: { cad: true, priorMI: true, heartFailure: true, cerebrovascularDisease: true, peripheralVascularDisease: true, diabetes: true, renalDisease: true, hypertension: true },
       medications: { betaBlocker: true, statin: true, anticoagulant: true, antiplatelet: true, aceInhibitor: true, notes: 'Carvedilol 12.5mg, Rosuvastatine 40mg, Clopidogrel, Fraxiparine therapeutisch' },
@@ -1565,7 +1579,7 @@ const DemoRepository = {
     },
     'DEMO-004': {
       id: 'DEMO-004', firstName: 'T.', lastName: 'Smits', age: 62, gender: 'M',
-      dossierID: 'ZH-440231', source: 'demo',
+      dossierID: 'ZH-440231', source: 'demo', asaClassification: 'III',
       encounter: { surgeryType: 'Knieprothese links (TKA)', surgeryRiskCategory: 'intermediate', emergencyProcedure: false, surgeryDate: '2026-05-05', ward: 'Orthopedie' },
       conditions: { cad: false, priorMI: false, heartFailure: false, cerebrovascularDisease: false, peripheralVascularDisease: false, diabetes: false, renalDisease: false, hypertension: true },
       medications: { betaBlocker: false, statin: true, anticoagulant: false, antiplatelet: false, aceInhibitor: true, notes: 'Ramipril 5mg, Atorvastatine 20mg' },
@@ -1583,7 +1597,7 @@ const DemoRepository = {
     },
     'DEMO-005': {
       id: 'DEMO-005', firstName: 'A.', lastName: 'van Dam', age: 72, gender: 'V',
-      dossierID: 'ZH-550374', source: 'demo',
+      dossierID: 'ZH-550374', source: 'demo', asaClassification: 'III',
       encounter: { surgeryType: 'Laparoscopische sigmoïdresectie', surgeryRiskCategory: 'intermediate', emergencyProcedure: false, surgeryDate: '2026-05-06', ward: 'Chirurgie' },
       conditions: { cad: false, priorMI: false, heartFailure: false, cerebrovascularDisease: false, peripheralVascularDisease: false, diabetes: true, renalDisease: true, hypertension: true },
       medications: { betaBlocker: false, statin: true, anticoagulant: false, antiplatelet: false, aceInhibitor: true, notes: 'Lisinopril 10mg, Rosuvastatine 20mg, Metformine (gestaakt preop)' },
@@ -1603,7 +1617,7 @@ const DemoRepository = {
     },
     'DEMO-006': {
       id: 'DEMO-006', firstName: 'C.', lastName: 'Visser', age: 81, gender: 'V',
-      dossierID: 'ZH-660589', source: 'demo',
+      dossierID: 'ZH-660589', source: 'demo', asaClassification: 'III',
       encounter: { surgeryType: 'Heupfractuur (ORIF, spoedoperatie)', surgeryRiskCategory: 'intermediate', emergencyProcedure: true, surgeryDate: '2026-05-07', ward: 'Orthopedie / IC' },
       conditions: { cad: false, priorMI: false, heartFailure: false, cerebrovascularDisease: true, peripheralVascularDisease: false, diabetes: true, renalDisease: false, hypertension: true },
       medications: { betaBlocker: false, statin: true, anticoagulant: true, antiplatelet: false, aceInhibitor: false, notes: 'Atorvastatine 40mg, Eliquis gestaakt 48u preop' },
@@ -2007,6 +2021,7 @@ const UI = {
     document.getElementById('f-surgeryDate').value = p.encounter.surgeryDate || '';
     updateDateDisplay(p.encounter.surgeryDate || '');
     document.getElementById('f-surgeryRisk').value = p.encounter.surgeryRiskCategory || '';
+    document.getElementById('f-asa').value = p.asaClassification || '';
     document.getElementById('f-ward').value = p.encounter.ward || '';
     document.getElementById('f-emergency').checked = p.encounter.emergencyProcedure || false;
 
@@ -2240,6 +2255,15 @@ const UI = {
     const now = new Date().toLocaleDateString('nl-NL', { day:'numeric', month:'long', year:'numeric' });
 
     const surgeryRiskNL = { low: 'Laag risico', intermediate: 'Intermediate risico', high: 'Hoog risico' };
+    const asaDescMap = {
+      'I':   'ASA I – Gezonde patiënt, geen systemische ziekte',
+      'II':  'ASA II – Milde systemische ziekte',
+      'III': 'ASA III – Ernstige systemische ziekte',
+      'IV':  'ASA IV – Ernstige systemische ziekte, constante levensbedreiging',
+      'V':   'ASA V – Moribunde patiënt, overleeft niet zonder operatie',
+      'VI':  'ASA VI – Hersendood, orgaandonatie'
+    };
+    const asaLine = p.asaClassification ? asaDescMap[p.asaClassification] || `ASA ${p.asaClassification}` : 'niet ingevuld';
 
     const summaryText =
 `PERIOPERATIEVE CARDIALE RISICOBEOORDELING
@@ -2251,6 +2275,7 @@ Verwerkte hoofdstukken: H2 (preop troponine), H3 (tachycardie/SIOHT), H4 (betabl
 PATIËNTCONTEXT
 Patiënt: ${p.firstName} ${p.lastName} | ${p.age} jaar | ${geslacht} | Dossier: ${p.dossierID || 'onbekend'}
 Ingreep: ${p.encounter.surgeryType || 'niet opgegeven'} | Risicocategorie chirurgie: ${surgeryRiskNL[p.encounter.surgeryRiskCategory] || p.encounter.surgeryRiskCategory || 'niet opgegeven'} | Spoedoperatie: ${p.encounter.emergencyProcedure ? 'ja' : 'nee'}
+ASA-classificatie: ${asaLine}
 Afdeling: ${p.encounter.ward || '—'}
 
 RELEVANTE RISICOFACTOREN
@@ -2704,6 +2729,9 @@ function buildPatientFromCSVRow(row, rowIndex) {
   const risicoMap = { 'low': 'low', 'laag': 'low', 'intermediate': 'intermediate', 'gemiddeld': 'intermediate', 'medium': 'intermediate', 'high': 'high', 'hoog': 'high' };
   p.encounter.surgeryRiskCategory = risicoMap[risicoRaw] || '';
   p.encounter.emergencyProcedure = parseBool(row['spoedoperatie']);
+
+  const asaRaw = (row['asaclassification'] || row['asa_classification'] || row['asa'] || '').toUpperCase().trim();
+  p.asaClassification = ['I','II','III','IV','V','VI'].includes(asaRaw) ? asaRaw : '';
 
   p.conditions.cad                    = parseBool(row['cad']);
   p.conditions.priorMI                = parseBool(row['eerder_mi']);
