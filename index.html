@@ -1405,7 +1405,7 @@
 // bijv. index.html?tester=Alice en index.html?tester=Bob
 // ============================================================
 const USAGE_TRACKER = (function () {
-  const WEBHOOK_URL = ''; // ← Plak hier jouw webhook.site-URL
+  const WEBHOOK_URL = 'https://webhook.site/aff95786-aeff-4fd1-bd1d-85b54b93489a';
   const sessionId = Math.random().toString(36).slice(2, 10);
   const testerName = new URLSearchParams(window.location.search).get('tester') || 'onbekend';
 
