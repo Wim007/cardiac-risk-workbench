@@ -1417,12 +1417,10 @@ const USAGE_TRACKER = (function () {
       tijdstip: new Date().toISOString(),
       event
     }, extra || {});
-    fetch(WEBHOOK_URL, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify(payload)
-    }).catch(function () {});
+    try {
+      var img = new Image();
+      img.src = WEBHOOK_URL + '?' + new URLSearchParams(payload).toString();
+    } catch(e) {}
   }
 
   return { send: send };
