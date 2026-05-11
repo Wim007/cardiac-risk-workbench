@@ -1399,6 +1399,35 @@
 
 <script>
 // ============================================================
+// GEBRUIKSTRACKING
+// Vul WEBHOOK_URL in met jouw webhook.site-adres om te activeren.
+// Stuur testers een link met ?tester=Naam om ze te onderscheiden,
+// bijv. index.html?tester=Alice en index.html?tester=Bob
+// ============================================================
+const USAGE_TRACKER = (function () {
+  const WEBHOOK_URL = ''; // ← Plak hier jouw webhook.site-URL
+  const sessionId = Math.random().toString(36).slice(2, 10);
+  const testerName = new URLSearchParams(window.location.search).get('tester') || 'onbekend';
+
+  function send(event, extra) {
+    if (!WEBHOOK_URL) return;
+    const payload = Object.assign({
+      tester: testerName,
+      sessie: sessionId,
+      tijdstip: new Date().toISOString(),
+      event
+    }, extra || {});
+    fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).catch(function () {});
+  }
+
+  return { send: send };
+})();
+
+// ============================================================
 // MONITORING HELPERS
 // ============================================================
 
@@ -2533,8 +2562,8 @@ function navigate(viewId, navEl) {
     if (p) { computeAndShowRisk(); }
   }
   else if (viewId === 'monitoring' && p) { UI.renderMonitoring(p); }
-  else if (viewId === 'alerts') { if (p) UI.renderAlerts(p); }
-  else if (viewId === 'summary') { if (p) UI.renderSummary(p); }
+  else if (viewId === 'alerts') { if (p) { UI.renderAlerts(p); USAGE_TRACKER.send('aanbevelingen_bekeken', { patient_id: p.id }); } }
+  else if (viewId === 'summary') { if (p) { UI.renderSummary(p); USAGE_TRACKER.send('artsensamenvatting_bekeken', { patient_id: p.id }); } }
   else if (viewId === 'architecture') { updateJsonPreview(); }
 }
 
@@ -2542,6 +2571,7 @@ function computeAndShowRisk() {
   const p = AppState.currentPatient;
   if (!p) return;
   UI.renderRiskBreakdown(p);
+  USAGE_TRACKER.send('risicoscore_berekend', { patient_id: p.id });
   // Success feedback (Opdracht 4a)
   const fb = document.getElementById('bereken-feedback');
   if (fb) {
@@ -2554,6 +2584,7 @@ function openPatient(id) {
   const p = AppState.sessionPatients.find(x => x.id === id);
   if (p) {
     AppState.currentPatient = JSON.parse(JSON.stringify(p));
+    USAGE_TRACKER.send('patient_geopend', { patient_id: p.id });
     navigate('patient-form');
   }
 }
@@ -3081,6 +3112,7 @@ document.getElementById('demo-modal').addEventListener('click', function(e) {
   // Set casus 3 (high risk) as the default active patient
   AppState.currentPatient = JSON.parse(JSON.stringify(AppState.sessionPatients[2]));
   UI.renderDashboard();
+  USAGE_TRACKER.send('app_geopend');
 })();
 </script>
 </body>
