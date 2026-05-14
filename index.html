@@ -1180,9 +1180,11 @@
           Voer hs-TnT waarden in per postoperatieve dag. Drempelwaarden: 0–13 ng/L normaal · 14–49 aandacht · 50–149 relevant · ≥150 zeer hoog.
         </p>
         <!-- Troponine trendgrafiek -->
-        <div style="position:relative;margin-bottom:28px;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:8px;padding:16px;">
+        <div style="margin-bottom:28px;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:8px;padding:16px;">
           <div style="font-size:12px;font-weight:600;color:var(--slate-500);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em;">Troponine trend (hs-TnT ng/L)</div>
-          <canvas id="troponin-chart" height="110"></canvas>
+          <div style="position:relative;height:160px;">
+            <canvas id="troponin-chart"></canvas>
+          </div>
         </div>
         <!-- FHIR: Observation (hs-TnT) resources per day -->
         <div class="timeline-grid" id="troponin-timeline">
@@ -3115,6 +3117,7 @@ document.getElementById('demo-modal').addEventListener('click', function(e) {
 let _troponinChartInstance = null;
 
 function renderTroponinChart(p) {
+  if (typeof Chart === 'undefined') return;
   const canvas = document.getElementById('troponin-chart');
   if (!canvas) return;
 
@@ -3122,26 +3125,22 @@ function renderTroponinChart(p) {
   const days = (p.monitoring.days || []).slice(0, n);
   const preop = p.labValues?.preOpTroponin ?? null;
 
-  // Labels: Preop, Dag 0, Dag 1, ...
   const labels = ['Preop', ...days.map((_, i) => i === 0 ? 'Dag 0' : `Dag ${i}`)];
 
-  // Waarden: preop als eerste punt, dan dagwaarden
   const values = [
     preop !== null && preop !== '' ? Number(preop) : null,
     ...days.map(d => (d.troponin !== null && d.troponin !== undefined && d.troponin !== '') ? Number(d.troponin) : null)
   ];
 
-  // Kleur per punt op basis van drempelwaarden
   const pointColors = values.map((v, i) => {
     if (v === null) return 'rgba(203,213,225,0.5)';
-    if (i === 0) return '#64748b'; // preop altijd grijs
+    if (i === 0) return '#64748b';
     if (v < 14)  return '#22c55e';
     if (v < 50)  return '#f59e0b';
     if (v < 150) return '#f97316';
     return '#ef4444';
   });
 
-  // MINS-drempelwaarde: preop * 1.2 (Thygesen 2018)
   const minsThreshold = (preop !== null && preop !== '') ? Number(preop) * 1.2 : null;
 
   const datasets = [
@@ -3172,11 +3171,12 @@ function renderTroponinChart(p) {
     });
   }
 
-  // Achtergrond zones als plugin
   const zonePlugin = {
     id: 'troponinZones',
     beforeDraw(chart) {
+      if (!chart.chartArea) return;
       const { ctx, chartArea: { top, bottom, left, right }, scales: { y } } = chart;
+      if (!y) return;
       const zones = [
         { min: 0,   max: 14,  color: 'rgba(34,197,94,0.06)' },
         { min: 14,  max: 50,  color: 'rgba(245,158,11,0.08)' },
@@ -3198,7 +3198,7 @@ function renderTroponinChart(p) {
   if (_troponinChartInstance) {
     _troponinChartInstance.data.labels = labels;
     _troponinChartInstance.data.datasets = datasets;
-    _troponinChartInstance.update('none');
+    _troponinChartInstance.update('active');
     return;
   }
 
@@ -3207,6 +3207,7 @@ function renderTroponinChart(p) {
     data: { labels, datasets },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       animation: { duration: 300 },
       plugins: {
         legend: {
