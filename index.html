@@ -3117,9 +3117,15 @@ document.getElementById('demo-modal').addEventListener('click', function(e) {
 let _troponinChartInstance = null;
 
 function renderTroponinChart(p) {
-  if (typeof Chart === 'undefined') return;
+  if (typeof Chart === 'undefined') {
+    console.warn('Troponin chart: Chart.js is not loaded yet');
+    return;
+  }
   const canvas = document.getElementById('troponin-chart');
-  if (!canvas) return;
+  if (!canvas) {
+    console.warn('Troponin chart: canvas troponin-chart not found in DOM. Ensure it exists in the static HTML inside view-monitoring.');
+    return;
+  }
 
   const n = p.monitoring.monitoringDays || 3;
   const days = (p.monitoring.days || []).slice(0, n);
