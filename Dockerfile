@@ -3,7 +3,7 @@ FROM nginx:alpine
 ARG CACHEBUST=1
 COPY index.html /usr/share/nginx/html/index.html
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 EXPOSE 80
 
