@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Perioperatief Cardiaal Risico Werkbank</title>
+<title>Cardiac Risk Monitor</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -830,8 +830,8 @@
 <!-- SIDEBAR -->
 <nav id="sidebar">
   <div class="sidebar-brand">
-    <div class="sidebar-brand-title">Perioperative Cardiac<br>Risk Monitor</div>
-    <div class="sidebar-brand-sub">Clinical Decision Support</div>
+    <div class="sidebar-brand-title">Cardiac Risk<br>Monitor</div>
+    <div class="sidebar-brand-sub">Beslisondersteuning</div>
     <span class="sidebar-badge">CONCEPT v0.1</span>
   </div>
 
@@ -987,6 +987,19 @@
             </select>
           </div>
           <div class="form-group">
+            <label class="form-label">ASA-classificatie <span class="source-badge source-manual">Handmatig</span></label>
+            <select class="form-select" id="f-asa" onchange="syncField('asaClassification', this.value)" title="Verplicht conform NVA-richtlijn Preoperatieve Screening. Wordt opgenomen in de artsensamenvatting.">
+              <option value="">-- selecteer --</option>
+              <option value="I">ASA I – Gezonde patiënt, geen systemische ziekte</option>
+              <option value="II">ASA II – Milde systemische ziekte (bijv. gecontroleerde hypertensie, DM2)</option>
+              <option value="III">ASA III – Ernstige systemische ziekte (bijv. hartfalen, slecht ingestelde DM)</option>
+              <option value="IV">ASA IV – Ernstige systemische ziekte, constante levensbedreiging</option>
+              <option value="V">ASA V – Moribunde patiënt, overleeft niet zonder operatie</option>
+              <option value="VI">ASA VI – Hersendood, orgaandonatie</option>
+            </select>
+            <div class="form-hint" style="font-size:11px;color:var(--slate-400);margin-top:4px;">Verplicht conform NVA-richtlijn Preoperatieve Screening</div>
+          </div>
+          <div class="form-group">
             <label class="form-label">Afdeling</label>
             <input class="form-input" id="f-ward" placeholder="Bijv. Vaatchirurgie" oninput="syncEncounter('ward', this.value)">
           </div>
@@ -1093,9 +1106,12 @@
           <div class="dropzone-sub">Alleen .csv bestanden &middot; Max. 500 rijen per import</div>
         </div>
         <input type="file" id="csv-file-input" accept=".csv" style="display:none" onchange="handleFileSelect(this)">
-        <div style="margin-top:12px;display:flex;gap:8px;align-items:center;">
+        <div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <button class="btn btn-secondary btn-sm" onclick="downloadCSVTemplate()">&#8615; Template downloaden</button>
           <span class="text-sm text-muted">Leeg sjabloon met de juiste kolomstructuur</span>
+          <button class="btn btn-primary btn-sm" onclick="downloadDemoCSV()">&#8615; 10 demo-patiënten downloaden</button>
+          <button class="btn btn-success btn-sm" onclick="loadDemoPatients()" style="background:var(--teal);border-color:var(--teal);color:#fff;">&#9654; 10 demo-patiënten direct laden</button>
+          <span class="text-sm text-muted">Meteen zichtbaar in de monitor</span>
         </div>
       </div>
 
@@ -1159,7 +1175,7 @@
         </div>
       </div>
       <div class="card">
-        <div class="card-title"><span class="card-title-icon">&#9203;</span> Postoperatieve monitoring — Troponine tijdlijn</div>
+        <div class="card-title"><span class="card-title-icon">&#9203;</span> Postoperatieve monitoring: Troponine tijdlijn</div>
         <p class="text-sm text-muted mb-16">
           Voer hs-TnT waarden in per postoperatieve dag. Drempelwaarden: 0–13 ng/L normaal · 14–49 aandacht · 50–149 relevant · ≥150 zeer hoog.
         </p>
@@ -1178,7 +1194,7 @@
         <div class="card-title"><span class="card-title-icon">&#9776;</span> Hemodynamische parameters
           <!-- FHIR: Observation (vital signs) -->
         </div>
-        <p class="text-sm text-muted mb-12">Nadruk op postoperatieve hypotensie — aanhoudende MAP-daling is een zelfstandige risicofactor.</p>
+        <p class="text-sm text-muted mb-12">Nadruk op postoperatieve hypotensie: aanhoudende MAP-daling is een zelfstandige risicofactor.</p>
         <div class="form-grid form-grid-3">
           <div class="form-group">
             <label class="form-label">Laagste postop MAP (mmHg)</label>
@@ -1191,6 +1207,28 @@
           <div class="form-group">
             <label class="form-label">Duur MAP &lt; 65 (minuten)</label>
             <input class="form-input" id="m-dur65" type="number" placeholder="bijv. 15" oninput="syncMonitor('durationBelowMAP65', +this.value)">
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="display:flex;align-items:center;gap:6px">
+              Max hartslag postop (bpm)
+              <span style="font-size:10px;background:var(--blue-50);color:var(--blue-600);border-radius:3px;padding:1px 5px;font-weight:600">H3</span>
+            </label>
+            <input class="form-input" id="m-maxHR" type="number" placeholder="bijv. 95" oninput="syncMonitor('maxPostopHR', +this.value)">
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="display:flex;align-items:center;gap:6px">
+              Duur tachycardie HR>90 (min)
+              <span style="font-size:10px;background:var(--blue-50);color:var(--blue-600);border-radius:3px;padding:1px 5px;font-weight:600">H3</span>
+            </label>
+            <input class="form-input" id="m-durTachy" type="number" placeholder="bijv. 35" oninput="syncMonitor('durationTachycardie', +this.value)">
+          </div>
+          <div class="form-group">
+            <label class="form-label" style="display:flex;align-items:center;gap:6px">
+              SIOHT-duur (min)
+              <span style="font-size:10px;background:var(--orange-50,#fff7ed);color:#c2410c;border-radius:3px;padding:1px 5px;font-weight:600">H3</span>
+            </label>
+            <div style="font-size:10px;color:var(--slate-400);margin-bottom:4px">Gelijktijdige hypotensie + tachycardie (MAP&lt;65 + HR>90)</div>
+            <input class="form-input" id="m-sioht" type="number" placeholder="bijv. 22" oninput="syncMonitor('siohTMinuten', +this.value)">
           </div>
         </div>
       </div>
@@ -1219,7 +1257,7 @@
     <!-- ARCHITECTURE -->
     <div class="view" id="view-architecture">
       <div class="card">
-        <div class="card-title"><span class="card-title-icon">&#9670;</span> FHIR Resourcemodel — Technische gereedheid</div>
+        <div class="card-title"><span class="card-title-icon">&#9670;</span> FHIR Resourcemodel: Technische gereedheid</div>
         <p class="text-sm text-muted mb-16">De app werkt intern al met FHIR-geïnspireerde logische objecten. Onderstaand schema toont de mapping die bij productie-inzet kan worden uitgebreid.</p>
         <div class="fhir-grid">
           <div class="fhir-resource">
@@ -1289,7 +1327,7 @@
       </div>
       <div class="card" id="json-preview-card" style="display:none;">
         <div class="card-title"><span class="card-title-icon">&#9670;</span> Interne datastructuur (JSON preview)</div>
-        <p class="text-sm text-muted mb-12">Zo ziet het interne patiëntobject eruit — direct te mappen op FHIR resources.</p>
+        <p class="text-sm text-muted mb-12">Zo ziet het interne patiëntobject eruit: direct te mappen op FHIR resources.</p>
         <pre id="json-preview" style="background:var(--slate-900);color:#a5f3fc;padding:16px;border-radius:6px;font-size:11px;overflow:auto;max-height:320px;line-height:1.5;"></pre>
       </div>
 
@@ -1319,22 +1357,43 @@
       <div class="demo-case-item" onclick="loadDemo('DEMO-001')">
         <div class="demo-case-icon">&#128994;</div>
         <div>
-          <div class="demo-case-name">Casus 1 — Laag risico</div>
+          <div class="demo-case-name">Casus 1: Laag risico</div>
           <div class="demo-case-desc">J. Bakker, 58 jr, laparoscopische cholecystectomie, stabiel troponine</div>
         </div>
       </div>
       <div class="demo-case-item" onclick="loadDemo('DEMO-002')">
         <div class="demo-case-icon">&#128993;</div>
         <div>
-          <div class="demo-case-name">Casus 2 — Verhoogd risico</div>
+          <div class="demo-case-name">Casus 2: Verhoogd risico</div>
           <div class="demo-case-desc">M. de Vries, 71 jr, heupprothese, CAD + diabetes, licht verhoogd troponine</div>
         </div>
       </div>
       <div class="demo-case-item" onclick="loadDemo('DEMO-003')">
         <div class="demo-case-icon">&#128308;</div>
         <div>
-          <div class="demo-case-name">Casus 3 — Hoog risico</div>
+          <div class="demo-case-name">Casus 3: Hoog risico</div>
           <div class="demo-case-desc">P. Jansen, 78 jr, vasculaire chirurgie, troponinestijging + postop hypotensie</div>
+        </div>
+      </div>
+      <div class="demo-case-item" onclick="loadDemo('DEMO-004')">
+        <div class="demo-case-icon">&#128994;</div>
+        <div>
+          <div class="demo-case-name">Casus 4: Knieprothese – laag risico</div>
+          <div class="demo-case-desc">T. Smits, 62 jr, TKA links, alleen hypertensie, stabiel troponine</div>
+        </div>
+      </div>
+      <div class="demo-case-item" onclick="loadDemo('DEMO-005')">
+        <div class="demo-case-icon">&#128993;</div>
+        <div>
+          <div class="demo-case-name">Casus 5: Colonresectie – verhoogd risico</div>
+          <div class="demo-case-desc">A. van Dam, 72 jr, sigmoïdresectie, DM2 + nierinsufficiëntie, milde troponinstijging</div>
+        </div>
+      </div>
+      <div class="demo-case-item" onclick="loadDemo('DEMO-006')">
+        <div class="demo-case-icon">&#128308;</div>
+        <div>
+          <div class="demo-case-name">Casus 6: Heupfractuur spoedoperatie – hoog risico</div>
+          <div class="demo-case-desc">C. Visser, 81 jr, ORIF spoedoperatie, CVA-voorgeschiedenis + DM2, significante troponinstijging</div>
         </div>
       </div>
     </div>
@@ -1345,6 +1404,34 @@
 </div>
 
 <script>
+// ============================================================
+// GEBRUIKSTRACKING
+// Vul WEBHOOK_URL in met jouw webhook.site-adres om te activeren.
+// Stuur testers een link met ?tester=Naam om ze te onderscheiden,
+// bijv. index.html?tester=Alice en index.html?tester=Bob
+// ============================================================
+const USAGE_TRACKER = (function () {
+  const WEBHOOK_URL = 'https://webhook.site/aff95786-aeff-4fd1-bd1d-85b54b93489a';
+  const sessionId = Math.random().toString(36).slice(2, 10);
+  const testerName = new URLSearchParams(window.location.search).get('tester') || 'onbekend';
+
+  function send(event, extra) {
+    if (!WEBHOOK_URL) return;
+    const payload = Object.assign({
+      tester: testerName,
+      sessie: sessionId,
+      tijdstip: new Date().toISOString(),
+      event
+    }, extra || {});
+    try {
+      var img = new Image();
+      img.src = WEBHOOK_URL + '?' + new URLSearchParams(payload).toString();
+    } catch(e) {}
+  }
+
+  return { send: send };
+})();
+
 // ============================================================
 // MONITORING HELPERS
 // ============================================================
@@ -1387,6 +1474,7 @@ function createEmptyPatient() {
     gender: '',
     dossierID: '',
     source: 'manual',
+    asaClassification: '',
 
     // FHIR: Encounter + Procedure
     encounter: {
@@ -1430,14 +1518,17 @@ function createEmptyPatient() {
 
     // FHIR: Observation[] (vitals + serial hs-TnT)
     monitoring: {
-      days: initMonitoringDays(3), // dynamische array — standaard 3 dagen
+      days: initMonitoringDays(3), // dynamische array: standaard 3 dagen
       monitoringDays: 3,
       minPostopMAP: null,
       durationBelowMAP75: null,
-      durationBelowMAP65: null
+      durationBelowMAP65: null,
+      maxPostopHR: null,
+      durationTachycardie: null,
+      siohTMinuten: null
     },
 
-    // Provenance tracking — per section: 'manual' | 'import' | 'fhir'
+    // Provenance tracking: per section: 'manual' | 'import' | 'fhir'
     dataSource: {
       identification: 'manual',
       encounter: 'manual',
@@ -1460,7 +1551,7 @@ const DemoRepository = {
   patients: {
     'DEMO-001': {
       id: 'DEMO-001', firstName: 'J.', lastName: 'Bakker', age: 58, gender: 'M',
-      dossierID: 'ZH-110042', source: 'demo',
+      dossierID: 'ZH-110042', source: 'demo', asaClassification: 'II',
       encounter: { surgeryType: 'Laparoscopische cholecystectomie', surgeryRiskCategory: 'low', emergencyProcedure: false, surgeryDate: '2026-05-01', ward: 'Chirurgie' },
       conditions: { cad: false, priorMI: false, heartFailure: false, cerebrovascularDisease: false, peripheralVascularDisease: false, diabetes: false, renalDisease: false, hypertension: true },
       medications: { betaBlocker: false, statin: true, anticoagulant: false, antiplatelet: false, aceInhibitor: true, notes: 'Lisinopril 10mg, Atorvastatine 20mg' },
@@ -1472,13 +1563,14 @@ const DemoRepository = {
           { troponin: 11, map: 85, hr: 70, notes: '' },
           { troponin: 10, map: 88, hr: 68, notes: '' },
         ],
-        minPostopMAP: 79, durationBelowMAP75: 0, durationBelowMAP65: 0
+        minPostopMAP: 79, durationBelowMAP75: 0, durationBelowMAP65: 0,
+        maxPostopHR: 74, durationTachycardie: 0, siohTMinuten: 0
       },
       dataSource: { identification: 'import', encounter: 'import', conditions: 'import', medications: 'import', labValues: 'import', monitoring: 'manual' }
     },
     'DEMO-002': {
       id: 'DEMO-002', firstName: 'M.', lastName: 'de Vries', age: 71, gender: 'V',
-      dossierID: 'ZH-220187', source: 'demo',
+      dossierID: 'ZH-220187', source: 'demo', asaClassification: 'III',
       encounter: { surgeryType: 'Heupprothese (THA)', surgeryRiskCategory: 'intermediate', emergencyProcedure: false, surgeryDate: '2026-05-02', ward: 'Orthopedie' },
       conditions: { cad: true, priorMI: false, heartFailure: false, cerebrovascularDisease: false, peripheralVascularDisease: false, diabetes: true, renalDisease: false, hypertension: true },
       medications: { betaBlocker: true, statin: true, anticoagulant: false, antiplatelet: true, aceInhibitor: false, notes: 'Metoprolol 50mg, Atorvastatine 40mg, Aspirine 80mg gestaakt preop' },
@@ -1491,13 +1583,14 @@ const DemoRepository = {
           { troponin: 42, map: 75, hr: 80, notes: '' },
           { troponin: 38, map: 78, hr: 78, notes: 'Licht dalend' },
         ],
-        minPostopMAP: 68, durationBelowMAP75: 45, durationBelowMAP65: 10
+        minPostopMAP: 68, durationBelowMAP75: 45, durationBelowMAP65: 10,
+        maxPostopHR: 88, durationTachycardie: 15, siohTMinuten: 8
       },
       dataSource: { identification: 'import', encounter: 'import', conditions: 'import', medications: 'import', labValues: 'import', monitoring: 'manual' }
     },
     'DEMO-003': {
       id: 'DEMO-003', firstName: 'P.', lastName: 'Jansen', age: 78, gender: 'M',
-      dossierID: 'ZH-330095', source: 'demo',
+      dossierID: 'ZH-330095', source: 'demo', asaClassification: 'IV',
       encounter: { surgeryType: 'Aorta-bifemorale bypass', surgeryRiskCategory: 'high', emergencyProcedure: false, surgeryDate: '2026-05-03', ward: 'Vaatchirurgie / IC' },
       conditions: { cad: true, priorMI: true, heartFailure: true, cerebrovascularDisease: true, peripheralVascularDisease: true, diabetes: true, renalDisease: true, hypertension: true },
       medications: { betaBlocker: true, statin: true, anticoagulant: true, antiplatelet: true, aceInhibitor: true, notes: 'Carvedilol 12.5mg, Rosuvastatine 40mg, Clopidogrel, Fraxiparine therapeutisch' },
@@ -1505,15 +1598,75 @@ const DemoRepository = {
       monitoring: {
         monitoringDays: 7,
         days: [
-          { troponin: 45,  map: 62, hr: 95,  notes: 'Postop instabiliteit — vasopressoren gestart' },
-          { troponin: 185, map: 65, hr: 102, notes: 'Troponine significant gestegen — cardioloog geïnformeerd' },
-          { troponin: 230, map: 68, hr: 98,  notes: 'Cardiologie geconsulteerd — ECG verricht' },
+          { troponin: 45,  map: 62, hr: 95,  notes: 'Postop instabiliteit: vasopressoren gestart' },
+          { troponin: 185, map: 65, hr: 102, notes: 'Troponine significant gestegen: cardioloog geïnformeerd' },
+          { troponin: 230, map: 68, hr: 98,  notes: 'Cardiologie geconsulteerd: ECG verricht' },
           { troponin: 195, map: 72, hr: 90,  notes: 'Licht dalend' },
           { troponin: 160, map: 74, hr: 86,  notes: '' },
           { troponin: 130, map: 76, hr: 82,  notes: 'Verder dalend' },
           { troponin: 98,  map: 78, hr: 80,  notes: 'Onder 150 ng/L' },
         ],
-        minPostopMAP: 58, durationBelowMAP75: 180, durationBelowMAP65: 95
+        minPostopMAP: 58, durationBelowMAP75: 180, durationBelowMAP65: 95,
+        maxPostopHR: 102, durationTachycardie: 45, siohTMinuten: 32
+      },
+      dataSource: { identification: 'import', encounter: 'import', conditions: 'import', medications: 'import', labValues: 'import', monitoring: 'manual' }
+    },
+    'DEMO-004': {
+      id: 'DEMO-004', firstName: 'T.', lastName: 'Smits', age: 62, gender: 'M',
+      dossierID: 'ZH-440231', source: 'demo', asaClassification: 'III',
+      encounter: { surgeryType: 'Knieprothese links (TKA)', surgeryRiskCategory: 'intermediate', emergencyProcedure: false, surgeryDate: '2026-05-05', ward: 'Orthopedie' },
+      conditions: { cad: false, priorMI: false, heartFailure: false, cerebrovascularDisease: false, peripheralVascularDisease: false, diabetes: false, renalDisease: false, hypertension: true },
+      medications: { betaBlocker: false, statin: true, anticoagulant: false, antiplatelet: false, aceInhibitor: true, notes: 'Ramipril 5mg, Atorvastatine 20mg' },
+      labValues: { preOpTroponin: 6, eGFR: 82, hemoglobin: 8.6, creatinine: 78 },
+      monitoring: {
+        monitoringDays: 2,
+        days: [
+          { troponin: 7, map: 88, hr: 68, notes: '' },
+          { troponin: 8, map: 86, hr: 70, notes: '' },
+        ],
+        minPostopMAP: 82, durationBelowMAP75: 0, durationBelowMAP65: 0,
+        maxPostopHR: 72, durationTachycardie: 0, siohTMinuten: 0
+      },
+      dataSource: { identification: 'import', encounter: 'import', conditions: 'import', medications: 'import', labValues: 'import', monitoring: 'manual' }
+    },
+    'DEMO-005': {
+      id: 'DEMO-005', firstName: 'A.', lastName: 'van Dam', age: 72, gender: 'V',
+      dossierID: 'ZH-550374', source: 'demo', asaClassification: 'III',
+      encounter: { surgeryType: 'Laparoscopische sigmoïdresectie', surgeryRiskCategory: 'intermediate', emergencyProcedure: false, surgeryDate: '2026-05-06', ward: 'Chirurgie' },
+      conditions: { cad: false, priorMI: false, heartFailure: false, cerebrovascularDisease: false, peripheralVascularDisease: false, diabetes: true, renalDisease: true, hypertension: true },
+      medications: { betaBlocker: false, statin: true, anticoagulant: false, antiplatelet: false, aceInhibitor: true, notes: 'Lisinopril 10mg, Rosuvastatine 20mg, Metformine (gestaakt preop)' },
+      labValues: { preOpTroponin: 9, eGFR: 52, hemoglobin: 7.5, creatinine: 118 },
+      monitoring: {
+        monitoringDays: 4,
+        days: [
+          { troponin: 14, map: 76, hr: 78, notes: '' },
+          { troponin: 22, map: 74, hr: 82, notes: 'Lichte stijging: verhoogde hydratiecontrole' },
+          { troponin: 19, map: 78, hr: 78, notes: '' },
+          { troponin: 15, map: 80, hr: 74, notes: 'Dalend, klinisch stabiel' },
+        ],
+        minPostopMAP: 72, durationBelowMAP75: 20, durationBelowMAP65: 0,
+        maxPostopHR: 84, durationTachycardie: 10, siohTMinuten: 0
+      },
+      dataSource: { identification: 'import', encounter: 'import', conditions: 'import', medications: 'import', labValues: 'import', monitoring: 'manual' }
+    },
+    'DEMO-006': {
+      id: 'DEMO-006', firstName: 'C.', lastName: 'Visser', age: 81, gender: 'V',
+      dossierID: 'ZH-660589', source: 'demo', asaClassification: 'III',
+      encounter: { surgeryType: 'Heupfractuur (ORIF, spoedoperatie)', surgeryRiskCategory: 'intermediate', emergencyProcedure: true, surgeryDate: '2026-05-07', ward: 'Orthopedie / IC' },
+      conditions: { cad: false, priorMI: false, heartFailure: false, cerebrovascularDisease: true, peripheralVascularDisease: false, diabetes: true, renalDisease: false, hypertension: true },
+      medications: { betaBlocker: false, statin: true, anticoagulant: true, antiplatelet: false, aceInhibitor: false, notes: 'Atorvastatine 40mg, Eliquis gestaakt 48u preop' },
+      labValues: { preOpTroponin: 12, eGFR: 61, hemoglobin: 7.2, creatinine: 98 },
+      monitoring: {
+        monitoringDays: 5,
+        days: [
+          { troponin: 28, map: 68, hr: 92, notes: 'Postoperatief hypotensie: IV vocht gegeven' },
+          { troponin: 65, map: 70, hr: 98, notes: 'Troponine stijging: cardioloog telefonisch geconsulteerd' },
+          { troponin: 88, map: 72, hr: 90, notes: 'Cardiologie geconsulteerd, ECG: geen STEMI' },
+          { troponin: 74, map: 76, hr: 82, notes: 'Langzaam dalend' },
+          { troponin: 55, map: 78, hr: 76, notes: 'Verdere daling, klinisch stabiel' },
+        ],
+        minPostopMAP: 64, durationBelowMAP75: 60, durationBelowMAP65: 15,
+        maxPostopHR: 98, durationTachycardie: 30, siohTMinuten: 12
       },
       dataSource: { identification: 'import', encounter: 'import', conditions: 'import', medications: 'import', labValues: 'import', monitoring: 'manual' }
     }
@@ -1571,7 +1724,7 @@ const RuleEngine = {
   // Serial troponin analysis: peak classification + MINS delta + trend
   // MINS definition: Thygesen 2018 / VISION study / Mol 2024
   evaluateTroponinRisk(patient) {
-    // Dynamic array — supports 1–30 configured monitoring days
+    // Dynamic array: supports 1–30 configured monitoring days
     const monDays = patient.monitoring.days || [];
     const rawValues = monDays.map(d => d?.troponin); // alle waarden incl. null
     const presentValues = rawValues
@@ -1599,7 +1752,7 @@ const RuleEngine = {
           if (risePct >= 20 && n >= 14) {
             minsCriteriumMet = true;
             flags.push(
-              `MINS-criterium: hs-TnT stijging ≥20% boven preop baseline (dag ${idx}: +${Math.round(risePct)}% — van ${preop} naar ${n} ng/L) | Thygesen 2018 / Mol 2024, H2`
+              `MINS-criterium: hs-TnT stijging ≥20% boven preop baseline (dag ${idx}: +${Math.round(risePct)}%: van ${preop} naar ${n} ng/L) | Thygesen 2018 / Mol 2024, H2`
             );
           }
         }
@@ -1609,16 +1762,16 @@ const RuleEngine = {
     // Absolute peak classification
     if (peak >= 150) {
       level = 'zeer hoog risico'; color = 'red';
-      flags.push('hs-TnT piekwaarde ≥ 150 ng/L — voldoet aan drempel voor MINS | 1-jr MACE: 40.6%, mortaliteit: 46.5% (Mol 2024, H6)');
+      flags.push('hs-TnT piekwaarde ≥ 150 ng/L: voldoet aan drempel voor MINS | 1-jr MACE: 40.6%, mortaliteit: 46.5% (Mol 2024, H6)');
     } else if (peak >= 50) {
       level = 'verhoogd risico'; color = 'orange';
-      flags.push('hs-TnT piekwaarde 50–149 ng/L — relevante myocardiale schade | 1-jr MACE: 10.4% (Mol 2024, H6)');
+      flags.push('hs-TnT piekwaarde 50–149 ng/L: relevante myocardiale schade | 1-jr MACE: 10.4% (Mol 2024, H6)');
     } else if (peak >= 14) {
       level = 'aandacht vereist'; color = 'amber';
-      flags.push('hs-TnT piekwaarde 14–49 ng/L — verhoogde aandacht, trend verplicht | 1-jr MACE: 6.1% (Mol 2024, H6)');
+      flags.push('hs-TnT piekwaarde 14–49 ng/L: verhoogde aandacht, trend verplicht | 1-jr MACE: 6.1% (Mol 2024, H6)');
     } else {
       level = 'normaal bereik'; color = 'green';
-      flags.push('hs-TnT piekwaarde < 14 ng/L — binnen referentiewaarde | 1-jr MACE: 3.4% (Mol 2024, H6)');
+      flags.push('hs-TnT piekwaarde < 14 ng/L: binnen referentiewaarde | 1-jr MACE: 3.4% (Mol 2024, H6)');
     }
 
     // MINS delta overrides level/color if stricter
@@ -1629,10 +1782,10 @@ const RuleEngine = {
       // MINS-specifieke uitkomstdata (VISION studie / Mol 2024, H2)
       // Ongeacht absolute piekwaarde: ≥20% stijging = verhoogd 30-dgs en 1-jr risico
       flags.push('MINS-uitkomst: 30-dgs MACE ~9.8%, 1-jr mortaliteit verhoogd ongeacht absolute piekwaarde | VISION studie (N=15.065) / Mol 2024, H2');
-      flags.push('MINS is in >90% van gevallen asymptomatisch — klinische beoordeling essentieel (Devereaux 2017, JAMA)');
+      flags.push('MINS is in >90% van gevallen asymptomatisch: klinische beoordeling essentieel (Devereaux 2017, JAMA)');
     }
 
-    // Trend (last two available values) — only when delta criterion not already dominant
+    // Trend (last two available values): only when delta criterion not already dominant
     let trend = null;
     if (presentValues.length >= 2) {
       const last = presentValues[presentValues.length - 1];
@@ -1642,11 +1795,11 @@ const RuleEngine = {
 
       if (!minsCriteriumMet && delta > 0 && pct > 15) {
         trend = 'stijgend';
-        flags.push('Stijgende troponinetrend (>' + Math.round(pct) + '%) — urgentie verhoogd');
+        flags.push('Stijgende troponinetrend (>' + Math.round(pct) + '%): urgentie verhoogd');
         if (color === 'amber') color = 'orange';
       } else if (delta < 0 && last >= 14) {
         trend = 'dalend maar afwijkend';
-        flags.push('Dalende trend maar waarden nog afwijkend — monitoring continueren');
+        flags.push('Dalende trend maar waarden nog afwijkend: monitoring continueren');
       } else if (delta < 0 && last < 14) {
         trend = 'normaliserend';
       } else {
@@ -1665,23 +1818,49 @@ const RuleEngine = {
 
     if (m.minPostopMAP !== null && m.minPostopMAP !== '') {
       const map = Number(m.minPostopMAP);
-      if (map < 65) { score += 3; flags.push('Laagste postop MAP < 65 mmHg — hemodynamisch kritisch (Mol 2024, H5)'); }
-      else if (map < 75) { score += 2; flags.push('Laagste postop MAP < 75 mmHg — hemodynamische aandacht vereist (Mol 2024, H5)'); }
+      if (map < 65) { score += 3; flags.push('Laagste postop MAP < 65 mmHg: hemodynamisch kritisch (Mol 2024, H5)'); }
+      else if (map < 75) { score += 2; flags.push('Laagste postop MAP < 75 mmHg: hemodynamische aandacht vereist (Mol 2024, H5)'); }
     }
 
     if (m.durationBelowMAP65 !== null && m.durationBelowMAP65 !== '') {
       const dur = Number(m.durationBelowMAP65);
       // Mol 2024 H5: duur MAP <60 mmHg 2-4u: aOR 3.26 (95%CI 1.57-6.48) voor myocardschade
-      if (dur > 60) { score += 3; flags.push('MAP < 65 gedurende ' + dur + ' min — sterk verhoogd risico myocardschade (Mol 2024, H5: aOR 3.26 bij >2u <60 mmHg)'); }
-      else if (dur > 20) { score += 2; flags.push('MAP < 65 gedurende ' + dur + ' min — aanhoudende hypotensie, onafh. risicofactor myocardschade (Mol 2024, H5)'); }
+      if (dur > 60) { score += 3; flags.push('MAP < 65 gedurende ' + dur + ' min: sterk verhoogd risico myocardschade (Mol 2024, H5: aOR 3.26 bij >2u <60 mmHg)'); }
+      else if (dur > 20) { score += 2; flags.push('MAP < 65 gedurende ' + dur + ' min: aanhoudende hypotensie, onafh. risicofactor myocardschade (Mol 2024, H5)'); }
       else if (dur > 0) { score += 1; flags.push('MAP < 65 gedurende ' + dur + ' min (Mol 2024, H5)'); }
     }
 
     if (m.durationBelowMAP75 !== null && m.durationBelowMAP75 !== '') {
       const dur = Number(m.durationBelowMAP75);
       // Mol 2024 H5: duur MAP <75 mmHg >635 min: aOR 2.68 (95%CI 1.46-5.07) voor myocardschade
-      if (dur > 635) { score += 2; flags.push('MAP < 75 gedurende ' + dur + ' min — aOR 2.68 voor myocardschade (Mol 2024, H5: 95%CI 1.46–5.07)'); }
-      else if (dur > 90) { score += 1; flags.push('MAP < 75 gedurende ' + dur + ' min — aandachtspunt (Mol 2024, H5)'); }
+      if (dur > 635) { score += 2; flags.push('MAP < 75 gedurende ' + dur + ' min: aOR 2.68 voor myocardschade (Mol 2024, H5: 95%CI 1.46–5.07)'); }
+      else if (dur > 90) { score += 1; flags.push('MAP < 75 gedurende ' + dur + ' min: aandachtspunt (Mol 2024, H5)'); }
+    }
+
+    // H3: Tachycardie >90 bpm als zelfstandige risicofactor (Mol 2024, H3)
+    if (m.maxPostopHR !== null && m.maxPostopHR !== '') {
+      const hr = Number(m.maxPostopHR);
+      if (hr > 90) { score += 1; flags.push('Tachycardie: max hartslag ' + hr + ' bpm (>90 bpm: zelfstandige risicofactor myocardschade, Mol 2024, H3)'); }
+    }
+
+    if (m.durationTachycardie !== null && m.durationTachycardie !== '') {
+      const dur = Number(m.durationTachycardie);
+      // Mol 2024 H3: tachycardie >31 min: aOR 2.69 (95%CI 1.85-3.90)
+      if (dur > 31) { score += 2; flags.push('Tachycardie HR>90 bpm gedurende ' + dur + ' min: aOR 2.69 voor myocardschade (Mol 2024, H3: 95%CI 1.85–3.90)'); }
+      else if (dur > 10) { score += 1; flags.push('Tachycardie HR>90 bpm gedurende ' + dur + ' min: aandachtspunt (Mol 2024, H3)'); }
+    }
+
+    // H3: SIOHT — Simultaneous Hypotension and Tachycardia (sterkste hemodynamische predictor)
+    if (m.siohTMinuten !== null && m.siohTMinuten !== '') {
+      const dur = Number(m.siohTMinuten);
+      // Mol 2024 H3: SIOHT >19 min: aOR 4.18 (95%CI 2.42-7.14); 30-dgs mortaliteit 6.5% vs 1.5%
+      if (dur > 19) {
+        score += 3;
+        flags.push('SIOHT vastgesteld: gelijktijdige hypotensie + tachycardie gedurende ' + dur + ' min — aOR 4.18 voor myocardschade, 30-dgs mortaliteit 6.5% vs 1.5% (Mol 2024, H3: 95%CI 2.42–7.14)');
+      } else if (dur > 0) {
+        score += 2;
+        flags.push('SIOHT aanwezig: gelijktijdige hypotensie + tachycardie gedurende ' + dur + ' min: onafhankelijke predictor myocardschade (Mol 2024, H3)');
+      }
     }
 
     let level, color;
@@ -1717,51 +1896,55 @@ const RuleEngine = {
 
       // MINS-protocol gaat vóór absolute drempelwaarden
       if (troponin.minsCriteriumMet) {
-        recs.push({ priority: 'urgent', text: 'MINS vastgesteld: informeer cardioloog binnen 24 uur — MINS is in >90% asymptomatisch maar verhoogt 30-dgs MACE significant (VISION studie)' });
-        recs.push({ priority: 'urgent', text: 'Verricht serieel ECG (dag 1, dag 2, dag 3) — sluit ischemie/new LBBB uit' });
+        recs.push({ priority: 'urgent', text: 'MINS vastgesteld: informeer cardioloog binnen 24 uur: MINS is in >90% asymptomatisch maar verhoogt 30-dgs MACE significant (VISION studie)' });
+        recs.push({ priority: 'urgent', text: 'Verricht serieel ECG (dag 1, dag 2, dag 3): sluit ischemie/new LBBB uit' });
         recs.push({ priority: 'urgent', text: 'Herhaal troponinebepaling elke 24u tot dalende trend ≤2 opeenvolgende metingen' });
         recs.push({ priority: 'hoog', text: 'Overweeg transthoracale echocardiografie bij aanhoudende stijging of hemodynamische instabiliteit' });
         recs.push({ priority: 'hoog', text: 'Beoordeel medicatielijst: aspirine/anticoagulantia heropstarten conform cardiologieadvies' });
-        recs.push({ priority: 'hoog', text: 'Documenteer MINS in ontslagbrief — verhoogd risico op MACE blijft aanwezig tot 1 jaar postoperatief (Mol 2024, H2)' });
+        recs.push({ priority: 'hoog', text: 'Documenteer MINS in ontslagbrief: verhoogd risico op MACE blijft aanwezig tot 1 jaar postoperatief (Mol 2024, H2)' });
         upgrade('orange');
       } else if (troponin.peak >= 150 || (troponin.peak >= 50 && troponin.trend === 'stijgend')) {
-        recs.push({ priority: 'urgent', text: 'Overweeg onmiddellijk cardiologieconsult — piekwaarde troponine significant verhoogd (≥150 ng/L)' });
+        recs.push({ priority: 'urgent', text: 'Overweeg onmiddellijk cardiologieconsult: piekwaarde troponine significant verhoogd (≥150 ng/L)' });
         recs.push({ priority: 'urgent', text: 'Herhaal troponinebepaling binnen 4–6 uur' });
         recs.push({ priority: 'urgent', text: 'Verricht 12-kanaals ECG en klinische beoordeling' });
         recs.push({ priority: 'urgent', text: 'Overweeg transthoracale echocardiografie' });
         upgrade('red');
       } else if (troponin.peak >= 50) {
-        recs.push({ priority: 'hoog', text: 'Herhaal troponinebepaling dag 2 en dag 3 — serieel patroon bepalend voor MINS-classificatie' });
+        recs.push({ priority: 'hoog', text: 'Herhaal troponinebepaling dag 2 en dag 3: serieel patroon bepalend voor MINS-classificatie' });
         recs.push({ priority: 'hoog', text: 'Verricht klinische beoordeling op cardiale symptomen (pijn, dyspnoe, ritmestoornissen)' });
         recs.push({ priority: 'hoog', text: 'Verricht ECG en overweeg cardiologieconsult' });
         upgrade('orange');
       } else if (troponin.peak >= 14) {
-        recs.push({ priority: 'matig', text: 'Herhaal troponinebepaling dag 2 — trend bepaalt of MINS-criterium van toepassing is' });
+        recs.push({ priority: 'matig', text: 'Herhaal troponinebepaling dag 2: trend bepaalt of MINS-criterium van toepassing is' });
         recs.push({ priority: 'matig', text: 'Overweeg ECG bij nieuwe klachten; beoordeel preop baseline als referentie' });
         upgrade('amber');
       }
     } else {
-      recs.push({ priority: 'matig', text: 'Start troponinebepaling dag 0 en dag 1 conform protocol — preop baseline essentieel voor MINS-detectie' });
+      recs.push({ priority: 'matig', text: 'Start troponinebepaling dag 0 en dag 1 conform protocol: preop baseline essentieel voor MINS-detectie' });
       upgrade('amber');
     }
 
     // Hemodynamic recommendations
     if (hemodynamic.level === 'hemodynamisch kritisch') {
-      recs.push({ priority: 'urgent', text: 'Beoordeel hemodynamische stabiliteit — aanhoudende postop hypotensie vastgesteld' });
+      recs.push({ priority: 'urgent', text: 'Beoordeel hemodynamische stabiliteit: aanhoudende postop hypotensie vastgesteld' });
       recs.push({ priority: 'urgent', text: 'Evalueer relatie hypotensie en myocardiale schade' });
+      // SIOHT specifiek
+      if (patient.monitoring.siohTMinuten > 19) {
+        recs.push({ priority: 'urgent', text: 'SIOHT vastgesteld (>19 min): sterkste hemodynamische predictor — aOR 4.18, 30-dgs mortaliteit 6.5% vs 1.5%. Overweeg direct cardioloogconsult (Mol 2024, H3)' });
+      }
       upgrade('red');
     } else if (hemodynamic.level === 'hemodynamisch instabiel') {
-      recs.push({ priority: 'hoog', text: 'Monitor hemodynamische stabiliteit nauwkeurig — MAP herhaling vereist' });
+      recs.push({ priority: 'hoog', text: 'Monitor hemodynamische stabiliteit nauwkeurig: MAP herhaling vereist' });
       upgrade('orange');
     } else if (hemodynamic.level === 'hemodynamische aandacht') {
       recs.push({ priority: 'matig', text: 'Monitor bloeddruk frequent in eerste 24–48u postop' });
       upgrade('amber');
     }
 
-    // Baseline risk — follow-up planning
+    // Baseline risk: follow-up planning
     if (baseline.level === 'hoog' || baseline.level === 'verhoogd') {
       if (troponin.minsCriteriumMet) {
-        recs.push({ priority: 'urgent', text: 'Plan cardiologische polikliniek binnen 4–6 weken na ontslag — MINS verhoogt 1-jr MACE risico ongeacht absolute piekwaarde (Mol 2024, H2)' });
+        recs.push({ priority: 'urgent', text: 'Plan cardiologische polikliniek binnen 4–6 weken na ontslag: MINS verhoogt 1-jr MACE risico ongeacht absolute piekwaarde (Mol 2024, H2)' });
       } else if (troponin.peak !== null && troponin.peak >= 14) {
         recs.push({ priority: 'hoog', text: 'Plan cardiologische follow-up binnen 3 maanden na ontslag' });
       } else {
@@ -1771,7 +1954,7 @@ const RuleEngine = {
 
     // Betablokker-advies (Mol 2024, H4: N=1468 matched pairs)
     if (patient.medications && patient.medications.betaBlocker) {
-      recs.push({ priority: 'laag', text: 'Continueer chronische betablokkers perioperatief — niet geassocieerd met verhoogde intraoperatieve hypotensie of adverse events (Mol 2024, H4: N=1468 matched pairs, P>0.05)' });
+      recs.push({ priority: 'laag', text: 'Continueer chronische betablokkers perioperatief: niet geassocieerd met verhoogde intraoperatieve hypotensie of adverse events (Mol 2024, H4: N=1468 matched pairs, P>0.05)' });
     }
 
     // Default low risk recommendation
@@ -1872,6 +2055,7 @@ const UI = {
     document.getElementById('f-surgeryDate').value = p.encounter.surgeryDate || '';
     updateDateDisplay(p.encounter.surgeryDate || '');
     document.getElementById('f-surgeryRisk').value = p.encounter.surgeryRiskCategory || '';
+    document.getElementById('f-asa').value = p.asaClassification || '';
     document.getElementById('f-ward').value = p.encounter.ward || '';
     document.getElementById('f-emergency').checked = p.encounter.emergencyProcedure || false;
 
@@ -1937,8 +2121,8 @@ const UI = {
       if (v === null || v === undefined || v === '') return null;
       const num = Number(v);
       if (num < 14) return { mace: '3.4%', mort: '10.3%', label: 'Mol 2024, H6' };
-      if (num < 50) return { mace: '6.1%', mort: null, label: 'Mol 2024, H6' };
-      if (num < 150) return { mace: '10.4%', mort: null, label: 'Mol 2024, H6' };
+      if (num < 50) return { mace: '6.1%', mort: '14.3%', label: 'Mol 2024, H6' };
+      if (num < 150) return { mace: '10.4%', mort: '27.9%', label: 'Mol 2024, H6' };
       return { mace: '40.6%', mort: '46.5%', label: 'Mol 2024, H6' };
     };
 
@@ -1983,6 +2167,9 @@ const UI = {
     document.getElementById('m-minMAP').value = m.minPostopMAP !== null && m.minPostopMAP !== undefined ? m.minPostopMAP : '';
     document.getElementById('m-dur75').value = m.durationBelowMAP75 !== null && m.durationBelowMAP75 !== undefined ? m.durationBelowMAP75 : '';
     document.getElementById('m-dur65').value = m.durationBelowMAP65 !== null && m.durationBelowMAP65 !== undefined ? m.durationBelowMAP65 : '';
+    document.getElementById('m-maxHR').value = m.maxPostopHR !== null && m.maxPostopHR !== undefined ? m.maxPostopHR : '';
+    document.getElementById('m-durTachy').value = m.durationTachycardie !== null && m.durationTachycardie !== undefined ? m.durationTachycardie : '';
+    document.getElementById('m-sioht').value = m.siohTMinuten !== null && m.siohTMinuten !== undefined ? m.siohTMinuten : '';
   },
 
   renderAlerts(p) {
@@ -1990,7 +2177,7 @@ const UI = {
     const { baseline, troponin, hemodynamic, recommendations, overallColor, overallUrgency } = result;
 
     const colorIcons = { green: '&#9899;', amber: '&#9888;', orange: '&#9888;', red: '&#9888;', gray: '&#9898;' };
-    const urgencyLabels = { laag: 'Laag — standaard monitoring', matig: 'Matig — verhoogde aandacht', hoog: 'Hoog — actie vereist', urgent: 'Urgent — onmiddellijke actie' };
+    const urgencyLabels = { laag: 'Laag: standaard monitoring', matig: 'Matig: verhoogde aandacht', hoog: 'Hoog: actie vereist', urgent: 'Urgent: onmiddellijke actie' };
 
     const trendLabel = { stijgend: '&#8679; stijgend', 'dalend maar afwijkend': '&#8681; dalend (nog afwijkend)', normaliserend: '&#8681; normaliserend', stabiel: '&#8596; stabiel' };
 
@@ -2028,9 +2215,84 @@ const UI = {
         </div>
       </div>
 
+      ${(() => {
+        const refRows = [
+          { range: '< 14 ng/L',    n: 1407, mace: '3.4%',  mort: '10.3%', hrqol: '0.85', eqvas: '80', color: '#16a34a', bg: '#dcfce7' },
+          { range: '14–49 ng/L',   n: 1312, mace: '6.1%',  mort: '14.3%', hrqol: '0.81', eqvas: '75', color: '#d97706', bg: '#fef3c7' },
+          { range: '50–149 ng/L',  n: 267,  mace: '10.4%', mort: '27.9%', hrqol: '0.77', eqvas: '70', color: '#ea580c', bg: '#ffedd5' },
+          { range: '≥ 150 ng/L',   n: 99,   mace: '40.6%', mort: '46.5%', hrqol: '0.71', eqvas: '63', color: '#dc2626', bg: '#fee2e2' },
+        ];
+        const peak = troponin.peak;
+        const getGroup = (v) => { if (v === null) return -1; if (v < 14) return 0; if (v < 50) return 1; if (v < 150) return 2; return 3; };
+        const activeGroup = getGroup(peak);
+        const betaBlocker = AppState.getPatient()?.medications?.betaBlocker;
+        return `
+        <div class="card">
+          <div class="card-title"><span class="card-title-icon">&#128202;</span> Populatiereferentie (Mol 2024)</div>
+          <p class="text-sm text-muted mb-12">Uitkomstdata per troponinegroep uit de studie (N=3.085). ${peak !== null ? `Deze patiënt valt in de <strong>gemarkeerde rij</strong> (piekwaarde ${peak} ng/L).` : 'Voer troponinewaarden in om de groep te markeren.'}</p>
+          <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:12px;">
+              <thead>
+                <tr style="background:var(--slate-100);">
+                  <th style="padding:8px 10px;text-align:left;font-weight:600;color:var(--slate-600);white-space:nowrap;">hs-TnT piek</th>
+                  <th style="padding:8px 10px;text-align:right;font-weight:600;color:var(--slate-600);">N</th>
+                  <th style="padding:8px 10px;text-align:right;font-weight:600;color:var(--slate-600);">1-jr MACE</th>
+                  <th style="padding:8px 10px;text-align:right;font-weight:600;color:var(--slate-600);">1-jr Mortaliteit</th>
+                  <th style="padding:8px 10px;text-align:right;font-weight:600;color:var(--slate-600);">HRQoL</th>
+                  <th style="padding:8px 10px;text-align:right;font-weight:600;color:var(--slate-600);">EQ-VAS</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${refRows.map((row, i) => {
+                  const isActive = i === activeGroup;
+                  const rowStyle = isActive
+                    ? `background:${row.bg};border-left:3px solid ${row.color};font-weight:600;`
+                    : 'border-left:3px solid transparent;';
+                  return `<tr style="${rowStyle}border-bottom:1px solid var(--slate-100);">
+                    <td style="padding:8px 10px;color:${row.color};white-space:nowrap;">${isActive ? '&#9658; ' : ''}${row.range}</td>
+                    <td style="padding:8px 10px;text-align:right;color:var(--slate-600);">${row.n}</td>
+                    <td style="padding:8px 10px;text-align:right;font-weight:600;color:${row.color};">${row.mace}</td>
+                    <td style="padding:8px 10px;text-align:right;font-weight:600;color:${row.color};">${row.mort}</td>
+                    <td style="padding:8px 10px;text-align:right;color:var(--slate-600);">${row.hrqol}</td>
+                    <td style="padding:8px 10px;text-align:right;color:var(--slate-600);">${row.eqvas}</td>
+                  </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+          <div style="margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+            <div style="padding:10px 12px;background:var(--slate-50);border-radius:6px;border:1px solid var(--slate-200);">
+              <div style="font-size:11px;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Studiepopulatie (H5 · N=1711)</div>
+              <div style="font-size:12px;color:var(--slate-700);line-height:1.7;">
+                Mediaan leeftijd: <strong>70.2 jaar</strong><br>
+                Geslacht man: <strong>57.6%</strong><br>
+                Hypertensie: <strong>57.6%</strong> &nbsp;|&nbsp; CAD: <strong>21.4%</strong><br>
+                Diabetes: <strong>11.3%</strong> &nbsp;|&nbsp; Bètablokker preop: <strong>42.2%</strong>
+              </div>
+            </div>
+            <div style="padding:10px 12px;background:${betaBlocker ? '#f0fdf4' : 'var(--slate-50)'};border-radius:6px;border:1px solid ${betaBlocker ? '#bbf7d0' : 'var(--slate-200)'};">
+              <div style="font-size:11px;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Bètablokker-effect (H4 · N=1468 per groep)</div>
+              <div style="font-size:12px;color:var(--slate-700);line-height:1.7;">
+                ${betaBlocker ? '<span style="color:#16a34a;font-weight:600;">&#10003; Patiënt gebruikt bètablokker</span><br>' : '<span style="color:var(--slate-500);">Patiënt gebruikt geen bètablokker</span><br>'}
+                Zonder bètablokker: hartslag <strong>65 bpm</strong>, 30-d mortaliteit <strong>1.4%</strong><br>
+                Met bètablokker: hartslag <strong>61 bpm</strong>, 30-d mortaliteit <strong>2.5%</strong><br>
+                <span style="font-size:10px;color:var(--slate-400);">Continueer preop bètablokker perioperatief (Mol 2024, H4)</span>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:10px;padding:10px 12px;background:var(--slate-50);border-radius:6px;border:1px solid var(--slate-200);">
+            <div style="font-size:11px;font-weight:700;color:var(--slate-500);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Postoperatieve hypotensie — referentiedrempels (H5)</div>
+            <div style="font-size:12px;color:var(--slate-700);display:grid;grid-template-columns:1fr 1fr;gap:6px;line-height:1.7;">
+              <div>Zonder hartschade (N=1473):<br>MAP &lt;65: <strong>8 min</strong> &nbsp;|&nbsp; MAP &lt;75: <strong>198 min</strong></div>
+              <div>Mét hartschade (N=238):<br>MAP &lt;65: <strong>34 min</strong> &nbsp;|&nbsp; MAP &lt;75: <strong>299 min</strong></div>
+            </div>
+          </div>
+        </div>`;
+      })()}
+
       <div class="card">
         <div class="card-title"><span class="card-title-icon">&#9998;</span> Aanbevelingen</div>
-        <p class="text-sm text-muted mb-12">Beslisondersteuning — geen diagnostische of therapeutische orders. Klinisch oordeel van de behandelaar blijft leidend.</p>
+        <p class="text-sm text-muted mb-12">Beslisondersteuning: geen diagnostische of therapeutische orders. Klinisch oordeel van de behandelaar blijft leidend.</p>
         <div class="rec-list">
           ${recommendations.map(r => `
             <div class="rec-item ${r.priority}">
@@ -2046,7 +2308,7 @@ const UI = {
     const { baseline, troponin, hemodynamic, recommendations, overallUrgency } = result;
 
     const geslacht = { M: 'man', V: 'vrouw', X: 'onbekend geslacht' }[p.gender] || '';
-    const urgencyNL = { laag: 'laag perioperatief cardiaal risico', matig: 'matig verhoogd perioperatief cardiaal risico', hoog: 'hoog perioperatief cardiaal risico', urgent: 'urgent perioperatief cardiaal risico — onmiddellijke aandacht vereist' };
+    const urgencyNL = { laag: 'laag perioperatief cardiaal risico', matig: 'matig verhoogd perioperatief cardiaal risico', hoog: 'hoog perioperatief cardiaal risico', urgent: 'urgent perioperatief cardiaal risico: onmiddellijke aandacht vereist' };
 
     const conditions = Object.entries(p.conditions)
       .filter(([, v]) => v)
@@ -2062,8 +2324,8 @@ const UI = {
 
     const molOutcomeMap = {
       normaal: '1-jr MACE 3.4%, mortaliteit 10.3%',
-      aandacht: '1-jr MACE 6.1%',
-      verhoogd: '1-jr MACE 10.4%',
+      aandacht: '1-jr MACE 6.1%, mortaliteit 14.3%',
+      verhoogd: '1-jr MACE 10.4%, mortaliteit 27.9%',
       kritisch: '1-jr MACE 40.6%, mortaliteit 46.5%'
     };
     const getMolOutcomeLine = (peak, minsCriteriumMet) => {
@@ -2076,12 +2338,25 @@ const UI = {
       return molOutcomeMap.kritisch;
     };
     const troponinLine = troponin.peak !== null
-      ? `hs-TnT piekwaarde ${troponin.peak} ng/L (${troponin.level}${troponin.trend ? ', ' + (trendMap[troponin.trend] || troponin.trend) : ''}) — ${getMolOutcomeLine(troponin.peak, troponin.minsCriteriumMet)} (Mol 2024, H6; N=3085)`
+      ? `hs-TnT piekwaarde ${troponin.peak} ng/L (${troponin.level}${troponin.trend ? ', ' + (trendMap[troponin.trend] || troponin.trend) : ''}): ${getMolOutcomeLine(troponin.peak, troponin.minsCriteriumMet)} (Mol 2024, H6; N=3085)`
       : 'Troponinebepalingen nog niet ingevoerd';
 
     const hemoLine = hemodynamic.flags.length > 0
       ? hemodynamic.flags.join('; ')
       : 'Geen hemodynamische aandachtspunten vastgesteld';
+
+    // H7: HRQoL verwachting op basis van troponine-categorie (Mol 2024, H7; N=1297)
+    const getHRQoLLine = (peak, minsCriteriumMet) => {
+      if (peak === null) return null;
+      if (minsCriteriumMet || peak >= 150) return { score: '0.71', delta: '-0.18 (95%CI -0.29 tot -0.07)', label: 'significant verlaagde kwaliteit van leven verwacht op 1 jaar' };
+      if (peak >= 50)  return { score: '0.77', delta: '-0.11 (95%CI -0.18 tot -0.04)', label: 'verlaagde kwaliteit van leven verwacht op 1 jaar' };
+      if (peak >= 14)  return { score: '0.81', delta: '-0.06 (95%CI -0.09 tot -0.02)', label: 'licht verlaagde kwaliteit van leven mogelijk op 1 jaar' };
+      return { score: '0.85', delta: null, label: 'kwaliteit van leven vergelijkbaar met populatienorm' };
+    };
+    const hrqol = getHRQoLLine(troponin.peak, troponin.minsCriteriumMet);
+    const hrqolLine = hrqol
+      ? `Verwachte HRQoL op 1 jaar: ${hrqol.score} (mediaan)${hrqol.delta ? ', β ' + hrqol.delta : ''} — ${hrqol.label} (Mol 2024, H7; N=1297)`
+      : 'HRQoL-inschatting niet beschikbaar (troponinewaarden ontbreken)';
 
     const recLines = recommendations
       .map((r, i) => `${i+1}. [${r.priority.toUpperCase()}] ${r.text}`)
@@ -2090,16 +2365,27 @@ const UI = {
     const now = new Date().toLocaleDateString('nl-NL', { day:'numeric', month:'long', year:'numeric' });
 
     const surgeryRiskNL = { low: 'Laag risico', intermediate: 'Intermediate risico', high: 'Hoog risico' };
+    const asaDescMap = {
+      'I':   'ASA I – Gezonde patiënt, geen systemische ziekte',
+      'II':  'ASA II – Milde systemische ziekte',
+      'III': 'ASA III – Ernstige systemische ziekte',
+      'IV':  'ASA IV – Ernstige systemische ziekte, constante levensbedreiging',
+      'V':   'ASA V – Moribunde patiënt, overleeft niet zonder operatie',
+      'VI':  'ASA VI – Hersendood, orgaandonatie'
+    };
+    const asaLine = p.asaClassification ? asaDescMap[p.asaClassification] || `ASA ${p.asaClassification}` : 'niet ingevuld';
 
     const summaryText =
 `PERIOPERATIEVE CARDIALE RISICOBEOORDELING
 Gegenereerd: ${now}
-Systeem: Perioperatief Cardiaal Risico Werkbank v0.1 (beslisondersteuning, niet diagnostisch)
-Wetenschappelijke basis: Mol KH. The cardiac risk of noncardiac surgery: from biomarker to event. Proefschrift Erasmus Universiteit Rotterdam, 2024.
+Systeem: Cardiac Risk Monitor v0.1 (beslisondersteuning, niet diagnostisch)
+Wetenschappelijke basis: Dr. K.H. Mol. The cardiac risk of noncardiac surgery: from biomarker to event. Proefschrift Erasmus Universiteit Rotterdam, 2024.
+Verwerkte hoofdstukken: H2 (preop troponine), H3 (tachycardie/SIOHT), H4 (betablokkers), H5 (postop hypotensie), H6 (1-jr MACE/mortaliteit), H7 (HRQoL).
 
 PATIËNTCONTEXT
 Patiënt: ${p.firstName} ${p.lastName} | ${p.age} jaar | ${geslacht} | Dossier: ${p.dossierID || 'onbekend'}
 Ingreep: ${p.encounter.surgeryType || 'niet opgegeven'} | Risicocategorie chirurgie: ${surgeryRiskNL[p.encounter.surgeryRiskCategory] || p.encounter.surgeryRiskCategory || 'niet opgegeven'} | Spoedoperatie: ${p.encounter.emergencyProcedure ? 'ja' : 'nee'}
+ASA-classificatie: ${asaLine}
 Afdeling: ${p.encounter.ward || '—'}
 
 RELEVANTE RISICOFACTOREN
@@ -2111,6 +2397,9 @@ ${troponinLine}
 
 HEMODYNAMISCHE AANDACHTSPUNTEN
 ${hemoLine}
+
+KWALITEIT VAN LEVEN (PROGNOSE 1 JAAR)
+${hrqolLine}
 
 SAMENVATTENDE URGENTIE-INSCHATTING
 ${(urgencyNL[overallUrgency] || overallUrgency).toUpperCase()}
@@ -2124,7 +2413,7 @@ Het systeem is conceptueel en niet bedoeld als zelfstandig diagnostisch of thera
 Het klinisch oordeel van de behandelend arts blijft te allen tijde leidend.
 
 BRONVERWIJZING
-Mol KH. The cardiac risk of noncardiac surgery: from biomarker to event.
+Dr. K.H. Mol. The cardiac risk of noncardiac surgery: from biomarker to event.
 Proefschrift Erasmus Universiteit Rotterdam, 6 februari 2024. ISBN 978-94-6483-731-5.
 Troponine-drempelwaarden en uitkomstdata: Mol 2024, Hoofdstuk 6 (N=3085 patiënten).
 Hemodynamische drempelwaarden: Mol 2024, Hoofdstuk 5 (N=1710 patiënten).
@@ -2230,7 +2519,7 @@ function syncMonitor(key, value) {
   updateJsonPreview();
 }
 
-// Replaced by syncDayMonitorByIndex — kept as no-op for safety
+// Replaced by syncDayMonitorByIndex: kept as no-op for safety
 function syncDayMonitor(day, key, value) {}
 
 function syncDayMonitorByIndex(index, key, value) {
@@ -2279,8 +2568,8 @@ function navigate(viewId, navEl) {
     if (p) { computeAndShowRisk(); }
   }
   else if (viewId === 'monitoring' && p) { UI.renderMonitoring(p); }
-  else if (viewId === 'alerts') { if (p) UI.renderAlerts(p); }
-  else if (viewId === 'summary') { if (p) UI.renderSummary(p); }
+  else if (viewId === 'alerts') { if (p) { UI.renderAlerts(p); USAGE_TRACKER.send('aanbevelingen_bekeken', { patient_id: p.id }); } }
+  else if (viewId === 'summary') { if (p) { UI.renderSummary(p); USAGE_TRACKER.send('artsensamenvatting_bekeken', { patient_id: p.id }); } }
   else if (viewId === 'architecture') { updateJsonPreview(); }
 }
 
@@ -2288,6 +2577,7 @@ function computeAndShowRisk() {
   const p = AppState.currentPatient;
   if (!p) return;
   UI.renderRiskBreakdown(p);
+  USAGE_TRACKER.send('risicoscore_berekend', { patient_id: p.id });
   // Success feedback (Opdracht 4a)
   const fb = document.getElementById('bereken-feedback');
   if (fb) {
@@ -2300,6 +2590,7 @@ function openPatient(id) {
   const p = AppState.sessionPatients.find(x => x.id === id);
   if (p) {
     AppState.currentPatient = JSON.parse(JSON.stringify(p));
+    USAGE_TRACKER.send('patient_geopend', { patient_id: p.id });
     navigate('patient-form');
   }
 }
@@ -2328,7 +2619,7 @@ function loadDemo(id) {
   // Show banner in patient-form view instead of blocking alert
   const banner = document.getElementById('demo-load-banner');
   if (banner) {
-    banner.textContent = `✓ Demo-casus geladen: ${p.firstName} ${p.lastName} — velden ingevuld via EPD-simulatie`;
+    banner.textContent = `✓ Demo-casus geladen: ${p.firstName} ${p.lastName}: velden ingevuld via EPD-simulatie`;
     banner.style.display = 'block';
     setTimeout(() => { banner.style.display = 'none'; }, 3000);
   }
@@ -2375,7 +2666,7 @@ function updatePreopTnInterpretation(val) {
   const v = parseFloat(val);
   if (isNaN(v) || val === '') { el.textContent = ''; el.style.color = ''; return; }
   if (v > 14) {
-    el.innerHTML = '&#9888; Verhoogd (>99e percentiel) — in vaatchirurgiecohort had 56% hs-TnT >14 ng/L, waarvan 50% significante obstructieve CAD bij angiografie <span style="opacity:0.7;">(Mol 2024, H2)</span>';
+    el.innerHTML = '&#9888; Verhoogd (>99e percentiel): in vaatchirurgiecohort had 56% hs-TnT >14 ng/L, waarvan 50% significante obstructieve CAD bij angiografie <span style="opacity:0.7;">(Mol 2024, H2)</span>';
     el.style.color = 'var(--orange)';
   } else {
     el.innerHTML = '&#10003; Binnen referentiewaarde (≤14 ng/L = 99e percentiel) <span style="opacity:0.7;">(Mol 2024, H2)</span>';
@@ -2521,14 +2812,15 @@ function buildPatientFromCSVRow(row, rowIndex) {
   const patientId = row['patient_id'] || ('CSV-' + Date.now() + '-' + rowIndex);
 
   // Build monitoring days from CSV columns dag1..dag3
-  const days = [{ troponin: null, map: null, hr: null, notes: '' }]; // dag 0 — niet in CSV
+  const days = [{ troponin: null, map: null, hr: null, notes: '' }]; // dag 0: niet in CSV
   for (let d = 1; d <= 3; d++) {
     const tn  = parseNum(row[`dag${d}_tnt`] || row[`dag${d}_troponin`] || row[`dag${d}_hs-tnt`]);
     const map = parseNum(row[`dag${d}_map`]);
-    days.push({ troponin: tn, map: map, hr: null, notes: '' });
+    const hr  = parseNum(row[`dag${d}_hr`]);
+    days.push({ troponin: tn, map: map, hr: hr, notes: '' });
   }
   // Trim trailing empty days
-  while (days.length > 1 && days[days.length - 1].troponin === null && days[days.length - 1].map === null) {
+  while (days.length > 1 && days[days.length - 1].troponin === null && days[days.length - 1].map === null && days[days.length - 1].hr === null) {
     days.pop();
   }
   const monitoringDays = days.length;
@@ -2538,13 +2830,20 @@ function buildPatientFromCSVRow(row, rowIndex) {
   p.dossierID = patientId;
   p.age = age;
   p.gender = gender || 'X';
-  p.firstName = '';
-  p.lastName = row['patient_id'] || `Rij ${rowIndex + 1}`;
+  p.firstName = row['initialen'] || row['voorletter'] || row['voornaam'] || '';
+  p.lastName = row['achternaam'] || row['patient_id'] || `Rij ${rowIndex + 1}`;
   p.source = 'csv-import';
 
   p.encounter.surgeryType = row['operatietype'] || '';
-  p.encounter.surgeryRiskCategory = '';
+  p.encounter.surgeryDate = row['operatiedatum'] || row['datum'] || '';
+  p.encounter.ward        = row['afdeling'] || '';
+  const risicoRaw = (row['risico_categorie'] || row['operatierisico'] || row['surgery_risk'] || '').toLowerCase().trim();
+  const risicoMap = { 'low': 'low', 'laag': 'low', 'intermediate': 'intermediate', 'gemiddeld': 'intermediate', 'medium': 'intermediate', 'high': 'high', 'hoog': 'high' };
+  p.encounter.surgeryRiskCategory = risicoMap[risicoRaw] || '';
   p.encounter.emergencyProcedure = parseBool(row['spoedoperatie']);
+
+  const asaRaw = (row['asaclassification'] || row['asa_classification'] || row['asa'] || '').toUpperCase().trim();
+  p.asaClassification = ['I','II','III','IV','V','VI'].includes(asaRaw) ? asaRaw : '';
 
   p.conditions.cad                    = parseBool(row['cad']);
   p.conditions.priorMI                = parseBool(row['eerder_mi']);
@@ -2555,12 +2854,25 @@ function buildPatientFromCSVRow(row, rowIndex) {
   p.conditions.renalDisease           = parseBool(row['nierziekte']);
   p.conditions.hypertension           = parseBool(row['hypertensie']);
 
-  p.medications.betaBlocker = parseBool(row['beta_blokker']);
+  p.medications.betaBlocker  = parseBool(row['beta_blokker']);
+  p.medications.statin       = parseBool(row['statin']);
+  p.medications.anticoagulant = parseBool(row['anticoagulant']);
+  p.medications.antiplatelet = parseBool(row['antiplatelet']);
+  p.medications.aceInhibitor = parseBool(row['ace_remmer']);
 
   p.labValues.preOpTroponin = parseNum(row['preop_tnt'] || row['preop_troponin'] || row['preop_hs-tnt']);
+  p.labValues.eGFR          = parseNum(row['egfr'] || row['eGFR']);
+  p.labValues.hemoglobin    = parseNum(row['hemoglobine'] || row['hemoglobin']);
+  p.labValues.creatinine    = parseNum(row['creatinine']);
 
   p.monitoring.days = days;
   p.monitoring.monitoringDays = monitoringDays;
+  p.monitoring.minPostopMAP         = parseNum(row['min_map'] || row['min_MAP']);
+  p.monitoring.durationBelowMAP75   = parseNum(row['dur_map75'] || row['dur_MAP75']);
+  p.monitoring.durationBelowMAP65   = parseNum(row['dur_map65'] || row['dur_MAP65']);
+  p.monitoring.maxPostopHR          = parseNum(row['max_hr'] || row['max_HR']);
+  p.monitoring.durationTachycardie  = parseNum(row['tachy_min']);
+  p.monitoring.siohTMinuten         = parseNum(row['sioht_min']);
 
   p.dataSource = { identification: 'import', encounter: 'import', conditions: 'import', medications: 'import', labValues: 'import', monitoring: 'import' };
 
@@ -2606,26 +2918,75 @@ function runCSVImport(csvText, fileName) {
       div.classList.add('success');
       const riskLabel = { green: 'Laag', amber: 'Verhoogd', orange: 'Hoog', red: 'Urgent', gray: '—' };
       const riskResult = RuleEngine.evaluateBaselineRisk(result.patient);
-      div.textContent = `✓ Rij ${i + 1} — ${result.patient.lastName} | ${result.patient.age} jr | Baselinerisico: ${riskLabel[riskResult.color] || riskResult.level}`;
+      div.textContent = `✓ Rij ${i + 1}: ${result.patient.lastName} | ${result.patient.age} jr | Baselinerisico: ${riskLabel[riskResult.color] || riskResult.level}`;
     } else {
       fail++;
       div.classList.add('error');
-      div.textContent = `✗ Rij ${i + 1} — ${result.errors.join(', ')}`;
+      div.textContent = `✗ Rij ${i + 1}: ${result.errors.join(', ')}`;
     }
     list.appendChild(div);
   });
 
-  status.textContent = `Klaar: ${ok} patiënten geïmporteerd${fail > 0 ? `, ${fail} rijen overgeslagen` : ''} — uit "${fileName}"`;
+  status.textContent = `Klaar: ${ok} patiënten geïmporteerd${fail > 0 ? `, ${fail} rijen overgeslagen` : ''}: uit "${fileName}"`;
   fill.style.width = '100%';
   UI.renderDashboard();
   showToast(`${ok} patiënten geïmporteerd uit ${fileName}`, false);
 }
 
 function downloadCSVTemplate() {
-  const header = 'patient_id,leeftijd,geslacht,operatietype,spoedoperatie,CAD,eerder_MI,hartfalen,cerebrovasculair,perifeer_vaataandoening,diabetes,nierziekte,hypertensie,beta_blokker,preop_TnT,dag1_TnT,dag1_MAP,dag2_TnT,dag2_MAP,dag3_TnT,dag3_MAP';
-  const example = 'PAT-001,67,M,Heupprothese,0,1,0,0,0,0,1,0,1,1,12,18,78,25,74,22,76';
+  const header  = 'patient_id,initialen,achternaam,leeftijd,geslacht,afdeling,operatiedatum,risico_categorie,operatietype,spoedoperatie,CAD,eerder_MI,hartfalen,cerebrovasculair,perifeer_vaataandoening,diabetes,nierziekte,hypertensie,beta_blokker,statin,anticoagulant,antiplatelet,ace_remmer,preop_TnT,eGFR,hemoglobine,creatinine,min_MAP,dur_MAP75,dur_MAP65,max_HR,tachy_min,sioht_min,dag1_TnT,dag1_MAP,dag1_HR,dag2_TnT,dag2_MAP,dag2_HR,dag3_TnT,dag3_MAP,dag3_HR';
+  const example = 'PAT-001,J.,Jansen,67,M,Chirurgie,2026-05-10,intermediate,Heupprothese,0,1,0,0,0,0,1,0,1,1,1,0,1,1,12,62,8.4,96,68,30,8,84,10,5,18,78,76,25,74,74,22,76,72';
   const csv = header + '\n' + example + '\n';
   triggerDownload(csv, 'cardiac-risk-import-template.csv', 'text/csv;charset=utf-8;');
+}
+
+function downloadDemoCSV() {
+  const csv = [
+    'patient_id,initialen,achternaam,leeftijd,geslacht,afdeling,operatiedatum,risico_categorie,operatietype,spoedoperatie,CAD,eerder_MI,hartfalen,cerebrovasculair,perifeer_vaataandoening,diabetes,nierziekte,hypertensie,beta_blokker,statin,anticoagulant,antiplatelet,ace_remmer,preop_TnT,eGFR,hemoglobine,creatinine,min_MAP,dur_MAP75,dur_MAP65,max_HR,tachy_min,sioht_min,dag1_TnT,dag1_MAP,dag1_HR,dag2_TnT,dag2_MAP,dag2_HR,dag3_TnT,dag3_MAP,dag3_HR',
+    'NC-001,R.,Pietersen,55,M,Chirurgie,2026-05-01,low,Laparoscopische cholecystectomie,0,0,0,0,0,0,0,0,1,0,1,0,0,1,6,74,8.8,82,84,0,0,74,0,0,7,86,72,8,84,70,,',
+    'NC-002,E.,Hendriks,68,V,Orthopedie,2026-05-02,intermediate,Knieprothese links (TKA),0,0,0,0,0,0,1,0,1,0,1,0,0,0,7,64,7.8,94,78,10,0,78,0,0,9,79,74,11,81,76,,',
+    'NC-003,F.,van der Berg,74,M,Urologie,2026-05-03,intermediate,Radicale prostatectomie,0,0,0,0,1,0,1,1,1,0,1,0,0,1,11,52,8.2,118,74,20,0,82,5,0,15,75,80,18,77,78,14,80,76',
+    'NC-004,S.,Kuijpers,48,V,Oncologie,2026-05-04,low,Mastectomie rechts,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,88,9.2,68,88,0,0,68,0,0,6,89,66,5,90,64,,',
+    'NC-005,H.,Vermeer,63,M,Chirurgie,2026-05-05,low,Thyroidectomie totaal,0,0,0,0,0,0,0,0,1,0,0,0,0,1,8,78,9.0,86,82,0,0,72,0,0,9,84,70,8,86,68,,',
+    'NC-006,A.,Brouwer,79,V,Chirurgie,2026-05-06,intermediate,Liesbreuk reparatie,0,0,0,0,1,0,0,0,1,0,1,0,0,1,13,58,7.4,106,72,25,0,84,8,0,18,72,80,22,74,82,19,76,78',
+    'NC-007,P.,Willems,56,M,Chirurgie,2026-05-07,intermediate,Laparoscopische sigmoïdresectie,0,0,0,0,0,0,1,0,0,0,0,0,0,0,9,82,8.6,78,78,15,0,86,5,0,12,80,84,16,78,82,13,82,80',
+    'NC-008,M.,de Groot,71,V,Orthopedie / IC,2026-05-07,high,Heupprothese spoed (THA),1,0,0,0,0,0,1,1,1,0,1,1,0,0,14,48,7.0,128,66,55,18,98,25,12,28,68,96,45,70,92,38,73,86',
+    'NC-009,T.,Mulder,42,M,Chirurgie,2026-05-08,intermediate,Appendectomie,1,0,0,0,0,0,0,0,0,0,0,0,0,0,4,94,9.4,72,90,0,0,88,0,0,5,91,86,4,92,84,,',
+    'NC-010,L.,Oosterhout,66,V,Longchirurgie,2026-05-08,intermediate,Longkwabresectie rechtsonder,0,0,0,0,0,0,0,0,1,1,1,0,0,1,10,68,8.4,92,74,18,0,88,8,0,16,76,82,24,73,80,20,77,78',
+  ].join('\n') + '\n';
+  triggerDownload(csv, 'demo-patienten-niet-cardiaal.csv', 'text/csv;charset=utf-8;');
+}
+
+function loadDemoPatients() {
+  const csvText = [
+    'patient_id,initialen,achternaam,leeftijd,geslacht,afdeling,operatiedatum,risico_categorie,operatietype,spoedoperatie,CAD,eerder_MI,hartfalen,cerebrovasculair,perifeer_vaataandoening,diabetes,nierziekte,hypertensie,beta_blokker,statin,anticoagulant,antiplatelet,ace_remmer,preop_TnT,eGFR,hemoglobine,creatinine,min_MAP,dur_MAP75,dur_MAP65,max_HR,tachy_min,sioht_min,dag1_TnT,dag1_MAP,dag1_HR,dag2_TnT,dag2_MAP,dag2_HR,dag3_TnT,dag3_MAP,dag3_HR',
+    'NC-001,R.,Pietersen,55,M,Chirurgie,2026-05-01,low,Laparoscopische cholecystectomie,0,0,0,0,0,0,0,0,1,0,1,0,0,1,6,74,8.8,82,84,0,0,74,0,0,7,86,72,8,84,70,,',
+    'NC-002,E.,Hendriks,68,V,Orthopedie,2026-05-02,intermediate,Knieprothese links (TKA),0,0,0,0,0,0,1,0,1,0,1,0,0,0,7,64,7.8,94,78,10,0,78,0,0,9,79,74,11,81,76,,',
+    'NC-003,F.,van der Berg,74,M,Urologie,2026-05-03,intermediate,Radicale prostatectomie,0,0,0,0,1,0,1,1,1,0,1,0,0,1,11,52,8.2,118,74,20,0,82,5,0,15,75,80,18,77,78,14,80,76',
+    'NC-004,S.,Kuijpers,48,V,Oncologie,2026-05-04,low,Mastectomie rechts,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,88,9.2,68,88,0,0,68,0,0,6,89,66,5,90,64,,',
+    'NC-005,H.,Vermeer,63,M,Chirurgie,2026-05-05,low,Thyroidectomie totaal,0,0,0,0,0,0,0,0,1,0,0,0,0,1,8,78,9.0,86,82,0,0,72,0,0,9,84,70,8,86,68,,',
+    'NC-006,A.,Brouwer,79,V,Chirurgie,2026-05-06,intermediate,Liesbreuk reparatie,0,0,0,0,1,0,0,0,1,0,1,0,0,1,13,58,7.4,106,72,25,0,84,8,0,18,72,80,22,74,82,19,76,78',
+    'NC-007,P.,Willems,56,M,Chirurgie,2026-05-07,intermediate,Laparoscopische sigmoïdresectie,0,0,0,0,0,0,1,0,0,0,0,0,0,0,9,82,8.6,78,78,15,0,86,5,0,12,80,84,16,78,82,13,82,80',
+    'NC-008,M.,de Groot,71,V,Orthopedie / IC,2026-05-07,high,Heupprothese spoed (THA),1,0,0,0,0,0,1,1,1,0,1,1,0,0,14,48,7.0,128,66,55,18,98,25,12,28,68,96,45,70,92,38,73,86',
+    'NC-009,T.,Mulder,42,M,Chirurgie,2026-05-08,intermediate,Appendectomie,1,0,0,0,0,0,0,0,0,0,0,0,0,0,4,94,9.4,72,90,0,0,88,0,0,5,91,86,4,92,84,,',
+    'NC-010,L.,Oosterhout,66,V,Longchirurgie,2026-05-08,intermediate,Longkwabresectie rechtsonder,0,0,0,0,0,0,0,0,1,1,1,0,0,1,10,68,8.4,92,74,18,0,88,8,0,16,76,82,24,73,80,20,77,78',
+  ].join('\n') + '\n';
+
+  const { rows } = parseCSVText(csvText);
+  let added = 0;
+  rows.forEach((row, i) => {
+    const result = buildPatientFromCSVRow(row, i);
+    if (result.ok) {
+      const existing = AppState.sessionPatients.findIndex(x => x.id === result.patient.id);
+      if (existing >= 0) AppState.sessionPatients[existing] = result.patient;
+      else AppState.sessionPatients.push(result.patient);
+      added++;
+    }
+  });
+
+  UI.renderDashboard();
+  navigate('dashboard', document.querySelector('[data-view="dashboard"]'));
+  showToast(`${added} demo-patiënten geladen in de monitor`, false);
 }
 
 function clearImportedData() {
@@ -2877,7 +3238,7 @@ function renderTroponinChart(p) {
 
 // ============================================================
 // INIT
-// Pre-load all 3 demo cases into session on startup
+// Pre-load all 6 demo cases into session on startup
 // ============================================================
 
 (function init() {
@@ -2885,6 +3246,7 @@ function renderTroponinChart(p) {
   // Set casus 3 (high risk) as the default active patient
   AppState.currentPatient = JSON.parse(JSON.stringify(AppState.sessionPatients[2]));
   UI.renderDashboard();
+  USAGE_TRACKER.send('app_geopend');
 })();
 </script>
 </body>
