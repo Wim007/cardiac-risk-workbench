@@ -1,6 +1,6 @@
 FROM nginx:alpine
 
-ARG CACHEBUST=1
+ARG CACHEBUST=2
 COPY index.html /usr/share/nginx/html/index.html
 COPY entrypoint.sh /entrypoint.sh
 RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
