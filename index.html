@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Perioperatief Cardiaal Risico Werkbank</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -829,8 +830,8 @@
 <!-- SIDEBAR -->
 <nav id="sidebar">
   <div class="sidebar-brand">
-    <div class="sidebar-brand-title">Perioperatief Cardiaal<br>Risico Werkbank</div>
-    <div class="sidebar-brand-sub">Beslisondersteuning</div>
+    <div class="sidebar-brand-title">Perioperative Cardiac<br>Risk Monitor</div>
+    <div class="sidebar-brand-sub">Clinical Decision Support</div>
     <span class="sidebar-badge">CONCEPT v0.1</span>
   </div>
 
@@ -870,7 +871,7 @@
 
   <div class="sidebar-footer">
     <div class="sidebar-disclaimer">
-      Conceptuele beslisondersteuning. Niet bedoeld als zelfstandig diagnostisch of therapeutisch systeem.
+      Conceptual clinical decision support. Not intended as a standalone diagnostic or therapeutic system.
     </div>
   </div>
 </nav>
@@ -1162,6 +1163,11 @@
         <p class="text-sm text-muted mb-16">
           Voer hs-TnT waarden in per postoperatieve dag. Drempelwaarden: 0–13 ng/L normaal · 14–49 aandacht · 50–149 relevant · ≥150 zeer hoog.
         </p>
+        <!-- Troponine trendgrafiek -->
+        <div style="position:relative;margin-bottom:28px;background:var(--slate-50);border:1px solid var(--slate-200);border-radius:8px;padding:16px;">
+          <div style="font-size:12px;font-weight:600;color:var(--slate-500);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em;">Troponine trend (hs-TnT ng/L)</div>
+          <canvas id="troponin-chart" height="110"></canvas>
+        </div>
         <!-- FHIR: Observation (hs-TnT) resources per day -->
         <div class="timeline-grid" id="troponin-timeline">
           <!-- rendered by JS -->
@@ -1890,6 +1896,7 @@ const UI = {
   },
 
   renderMonitoring(p) {
+    renderTroponinChart(p);
     // Dynamic monitoring: 1–30 days configured per patient
     const n = p.monitoring.monitoringDays || 3;
 
@@ -2739,6 +2746,134 @@ function toggleJsonPreview() {
 document.getElementById('demo-modal').addEventListener('click', function(e) {
   if (e.target === this) closeDemoModal();
 });
+
+// ============================================================
+// TROPONINE GRAFIEK
+// ============================================================
+
+let _troponinChartInstance = null;
+
+function renderTroponinChart(p) {
+  const canvas = document.getElementById('troponin-chart');
+  if (!canvas) return;
+
+  const n = p.monitoring.monitoringDays || 3;
+  const days = (p.monitoring.days || []).slice(0, n);
+  const preop = p.labValues?.preOpTroponin ?? null;
+
+  // Labels: Preop, Dag 0, Dag 1, ...
+  const labels = ['Preop', ...days.map((_, i) => i === 0 ? 'Dag 0' : `Dag ${i}`)];
+
+  // Waarden: preop als eerste punt, dan dagwaarden
+  const values = [
+    preop !== null && preop !== '' ? Number(preop) : null,
+    ...days.map(d => (d.troponin !== null && d.troponin !== undefined && d.troponin !== '') ? Number(d.troponin) : null)
+  ];
+
+  // Kleur per punt op basis van drempelwaarden
+  const pointColors = values.map((v, i) => {
+    if (v === null) return 'rgba(203,213,225,0.5)';
+    if (i === 0) return '#64748b'; // preop altijd grijs
+    if (v < 14)  return '#22c55e';
+    if (v < 50)  return '#f59e0b';
+    if (v < 150) return '#f97316';
+    return '#ef4444';
+  });
+
+  // MINS-drempelwaarde: preop * 1.2 (Thygesen 2018)
+  const minsThreshold = (preop !== null && preop !== '') ? Number(preop) * 1.2 : null;
+
+  const datasets = [
+    {
+      label: 'hs-TnT (ng/L)',
+      data: values,
+      borderColor: '#0d9488',
+      backgroundColor: 'rgba(13,148,136,0.08)',
+      pointBackgroundColor: pointColors,
+      pointBorderColor: pointColors,
+      pointRadius: values.map(v => v !== null ? 6 : 0),
+      pointHoverRadius: 8,
+      tension: 0.3,
+      fill: true,
+      spanGaps: true,
+    }
+  ];
+
+  if (minsThreshold !== null) {
+    datasets.push({
+      label: `MINS-drempel (${minsThreshold.toFixed(0)} ng/L)`,
+      data: Array(labels.length).fill(minsThreshold),
+      borderColor: '#f97316',
+      borderDash: [5, 4],
+      borderWidth: 1.5,
+      pointRadius: 0,
+      fill: false,
+    });
+  }
+
+  // Achtergrond zones als plugin
+  const zonePlugin = {
+    id: 'troponinZones',
+    beforeDraw(chart) {
+      const { ctx, chartArea: { top, bottom, left, right }, scales: { y } } = chart;
+      const zones = [
+        { min: 0,   max: 14,  color: 'rgba(34,197,94,0.06)' },
+        { min: 14,  max: 50,  color: 'rgba(245,158,11,0.08)' },
+        { min: 50,  max: 150, color: 'rgba(249,115,22,0.09)' },
+        { min: 150, max: Infinity, color: 'rgba(239,68,68,0.10)' },
+      ];
+      zones.forEach(({ min, max, color }) => {
+        const yTop    = y.getPixelForValue(Math.min(max, y.max));
+        const yBottom = y.getPixelForValue(Math.max(min, y.min));
+        if (yBottom <= top || yTop >= bottom) return;
+        ctx.save();
+        ctx.fillStyle = color;
+        ctx.fillRect(left, Math.max(yTop, top), right - left, Math.min(yBottom, bottom) - Math.max(yTop, top));
+        ctx.restore();
+      });
+    }
+  };
+
+  if (_troponinChartInstance) {
+    _troponinChartInstance.data.labels = labels;
+    _troponinChartInstance.data.datasets = datasets;
+    _troponinChartInstance.update('none');
+    return;
+  }
+
+  _troponinChartInstance = new Chart(canvas, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      animation: { duration: 300 },
+      plugins: {
+        legend: {
+          display: true,
+          labels: { font: { size: 11 }, color: '#475569', boxWidth: 20 }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.parsed.y !== null ? `${ctx.dataset.label}: ${ctx.parsed.y} ng/L` : 'Geen waarde'
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { font: { size: 11 }, color: '#64748b' },
+          grid: { color: 'rgba(203,213,225,0.4)' }
+        },
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: 'ng/L', font: { size: 10 }, color: '#94a3b8' },
+          ticks: { font: { size: 11 }, color: '#64748b' },
+          grid: { color: 'rgba(203,213,225,0.4)' }
+        }
+      }
+    },
+    plugins: [zonePlugin]
+  });
+}
 
 // ============================================================
 // INIT
