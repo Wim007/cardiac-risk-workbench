@@ -914,7 +914,10 @@
       </div>
 
       <div class="card">
-        <div class="card-title"><span class="card-title-icon">&#9783;</span> Recente casussen</div>
+        <div class="card-title" style="display:flex;align-items:center;justify-content:space-between;">
+          <span><span class="card-title-icon">&#9783;</span> Recente casussen</span>
+          <button class="btn btn-secondary btn-sm" onclick="openCriticalOverview()" style="font-size:12px;">&#9888; Dagoverzicht kritieke patiënten</button>
+        </div>
         <div class="patient-list" id="patient-list">
           <div class="text-muted text-sm" style="padding:16px 0;">
             Nog geen patiënten. Laad een demo-casus of voer een nieuwe patiënt in.
@@ -1058,7 +1061,7 @@
         <div class="form-grid form-grid-3">
           <div class="form-group">
             <label class="form-label">Preop hs-TnT (ng/L) <span class="source-badge source-import">Import-ready</span></label>
-            <input class="form-input" id="l-preTn" type="number" placeholder="bijv. 10" oninput="syncLab('preOpTroponin', +this.value); updatePreopTnInterpretation(this.value)">
+            <input class="form-input" id="l-preTn" type="number" min="0" placeholder="bijv. 10" oninput="syncLab('preOpTroponin', +this.value); updatePreopTnInterpretation(this.value)">
             <div id="preop-tn-interp" style="font-size:11px;margin-top:3px;"></div>
           </div>
           <div class="form-group">
@@ -1351,6 +1354,17 @@
 </main>
 
 <!-- DEMO MODAL -->
+<div class="modal-overlay" id="critical-overview-modal">
+  <div class="modal-box" style="max-width:720px;width:95%;">
+    <div class="modal-title">&#9888; Dagoverzicht kritieke patiënten</div>
+    <div class="modal-sub">Gesorteerd op risico — rood en oranje bovenaan. Klik op een patiënt om direct naar het dossier te gaan.</div>
+    <div id="critical-overview-list" style="display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow-y:auto;padding-right:4px;"></div>
+    <div style="margin-top:16px;text-align:right;">
+      <button class="btn btn-ghost btn-sm" onclick="closeCriticalOverview()">Sluiten</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="demo-modal">
   <div class="modal-box">
     <div class="modal-title">Demo-casus laden / EPD-import simuleren</div>
@@ -2142,7 +2156,7 @@ const UI = {
           <div class="form-group">
             <label class="form-label">hs-TnT (ng/L)</label>
             <input class="form-input" type="number" value="${tn !== null && tn !== undefined ? tn : ''}"
-              placeholder="ng/L" oninput="syncDayMonitorByIndex(${i}, 'troponin', this.value); UI.renderMonitoring(AppState.getPatient())">
+              min="0" placeholder="ng/L" oninput="syncDayMonitorByIndex(${i}, 'troponin', this.value); UI.renderMonitoring(AppState.getPatient())">
           </div>
           <div class="troponin-value-display ${cls}" style="margin:8px 0 4px;">${displayVal}</div>
           <div class="text-sm text-muted">${getTroponinLabel(tn)}</div>
@@ -2509,6 +2523,7 @@ function syncMed(key, value) {
 
 function syncLab(key, value) {
   ensurePatient();
+  if ((key === 'preOpTroponin') && value !== '' && Number(value) < 0) return;
   AppState.currentPatient.labValues[key] = value;
   AppState.setPatient(AppState.currentPatient);
   updateJsonPreview();
@@ -2530,6 +2545,7 @@ function syncDayMonitorByIndex(index, key, value) {
   if (!p.monitoring.days[index]) {
     p.monitoring.days[index] = { troponin: null, map: null, hr: null, notes: '' };
   }
+  if (key === 'troponin' && value !== '' && Number(value) < 0) return;
   p.monitoring.days[index][key] = (key !== 'notes' && value !== '') ? Number(value) : value;
   AppState.setPatient(p);
   updateJsonPreview();
@@ -2607,6 +2623,43 @@ function newPatient() {
 // ============================================================
 // DEMO / EPD IMPORT SIMULATION
 // ============================================================
+
+function openCriticalOverview() {
+  const colorOrder = { red: 0, orange: 1, amber: 2, green: 3, gray: 4 };
+  const labelMap = { red: 'Urgent', orange: 'Hoog risico', amber: 'Matig', green: 'Laag risico', gray: 'Geen data' };
+  const patients = AppState.sessionPatients.filter(p => p && p.lastName && p.lastName.trim() !== '' && p.age);
+
+  const sorted = patients
+    .map(p => ({ p, result: RuleEngine.generateRecommendations(p) }))
+    .sort((a, b) => (colorOrder[a.result.overallColor] ?? 4) - (colorOrder[b.result.overallColor] ?? 4));
+
+  const list = document.getElementById('critical-overview-list');
+  if (sorted.length === 0) {
+    list.innerHTML = '<div class="text-muted text-sm" style="padding:12px 0;">Geen patiënten in sessie.</div>';
+  } else {
+    list.innerHTML = sorted.map(({ p, result }) => {
+      const c = result.overallColor || 'gray';
+      const tn = result.troponin;
+      const peak = tn && tn.peak !== null ? tn.peak + ' ng/L' : '—';
+      const mins = tn && tn.minsCriteriumMet
+        ? '<span style="background:#fff3cd;color:#92400e;font-size:10px;font-weight:700;padding:2px 6px;border-radius:3px;margin-left:6px;">MINS</span>'
+        : '';
+      const trend = tn && tn.trend ? ` · ${tn.trend}` : '';
+      const urgentRec = result.recommendations.find(r => r.priority === 'urgent' || r.priority === 'hoog');
+      return `
+        <div onclick="closeCriticalOverview();openPatient('${p.id}')" style="display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--slate-200);border-radius:6px;cursor:pointer;background:var(--slate-50);transition:background 0.15s;" onmouseover="this.style.background='var(--slate-100)'" onmouseout="this.style.background='var(--slate-50)'">
+          <div class="patient-avatar" style="flex-shrink:0;">${(p.firstName[0]||'')+(p.lastName[0]||'')}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:600;font-size:13px;">${p.firstName} ${p.lastName} <span style="font-weight:400;color:var(--slate-400);font-size:12px;">${p.age} jr · ${p.encounter.surgeryType || '—'}</span></div>
+            <div style="font-size:11px;color:var(--slate-500);margin-top:2px;">Piek hs-TnT: <strong>${peak}</strong>${mins}${trend}${urgentRec ? ' · ' + urgentRec.text.substring(0, 60) + '…' : ''}</div>
+          </div>
+          <span class="badge badge-${c}" style="flex-shrink:0;">${labelMap[c]}</span>
+        </div>`;
+    }).join('');
+  }
+  document.getElementById('critical-overview-modal').classList.add('open');
+}
+function closeCriticalOverview() { document.getElementById('critical-overview-modal').classList.remove('open'); }
 
 function openDemoModal() { document.getElementById('demo-modal').classList.add('open'); }
 function closeDemoModal() { document.getElementById('demo-modal').classList.remove('open'); }
@@ -3106,6 +3159,9 @@ function toggleJsonPreview() {
 }
 
 // Close modal on overlay click
+document.getElementById('critical-overview-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeCriticalOverview();
+});
 document.getElementById('demo-modal').addEventListener('click', function(e) {
   if (e.target === this) closeDemoModal();
 });
