@@ -800,6 +800,15 @@
     .form-grid-3 { grid-template-columns: 1fr 1fr; }
   }
 
+  @media print {
+    body { background: #fff; }
+    .sidebar, .topbar, #print-hide { display: none !important; }
+    #main { margin-left: 0 !important; }
+    .view { display: none !important; }
+    #print-frame { display: block !important; }
+    #print-frame { font-family: 'Courier New', monospace; font-size: 11pt; line-height: 1.6; color: #000; white-space: pre-wrap; padding: 20mm; }
+  }
+
   /* TOAST */
   .toast {
     position: fixed;
@@ -1165,6 +1174,7 @@
           Voer hs-TnT waarden in per postoperatieve dag. Drempelwaarden: 0–13 ng/L normaal · 14–49 aandacht · 50–149 relevant · ≥150 zeer hoog.
         </p>
         <div id="troponin-chart" style="margin-bottom:20px;"></div>
+        <div id="monitoring-inline-alert" style="display:none;margin-bottom:16px;"></div>
         <!-- FHIR: Observation (hs-TnT) resources per day -->
         <div class="timeline-grid" id="troponin-timeline">
           <!-- rendered by JS -->
@@ -1207,7 +1217,10 @@
       <div class="card">
         <div class="card-title" style="justify-content:space-between;">
           <span><span class="card-title-icon">&#9998;</span> Artsensamenvatting</span>
-          <button class="btn btn-secondary btn-sm" id="copy-summary-btn" onclick="copySummary(this)">&#10064; Kopieer samenvatting</button>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-secondary btn-sm" id="copy-summary-btn" onclick="copySummary(this)">&#10064; Kopieer samenvatting</button>
+            <button class="btn btn-secondary btn-sm" onclick="printSummary()">&#9113; PDF / Afdrukken</button>
+          </div>
         </div>
         <div class="summary-box" id="summary-text">Geen patiënt actief. Laad een demo-casus of voer patiëntgegevens in.</div>
       </div>
@@ -1340,6 +1353,8 @@
     </div>
   </div>
 </div>
+
+<div id="print-frame" style="display:none;"></div>
 
 <script>
 // ============================================================
@@ -2108,6 +2123,31 @@ const UI = {
 
     svg += '</svg>';
     el.innerHTML = svg;
+
+    // Inline alert op basis van huidige waarden
+    const alertEl = document.getElementById('monitoring-inline-alert');
+    if (alertEl) {
+      const troponin = RuleEngine.evaluateTroponinRisk(p);
+      if (points.length === 0) {
+        alertEl.style.display = 'none';
+      } else if (troponin.minsCriteriumMet) {
+        const minsType = RuleEngine.classifyMinsType(p);
+        const typeLabel = minsType.type === 'type1' ? 'Type 1 (ischemisch)' : minsType.type === 'type2' ? 'Type 2 (supply-demand mismatch)' : 'type onbepaald';
+        alertEl.style.display = 'block';
+        alertEl.innerHTML = `<div class="alert-banner orange" style="margin:0;"><span class="alert-banner-icon">&#9888;</span><div><div class="alert-banner-text">MINS-criterium bereikt — ${typeLabel}</div><div class="text-sm" style="margin-top:2px;">Navigeer naar Alert-engine voor volledige aanbevelingen &rarr; <button class="btn btn-ghost btn-sm" style="margin-left:8px;" onclick="navigate('alerts')">Open Alert-engine</button></div></div></div>`;
+      } else if (troponin.peak !== null && troponin.peak >= 150) {
+        alertEl.style.display = 'block';
+        alertEl.innerHTML = `<div class="alert-banner red" style="margin:0;"><span class="alert-banner-icon">&#9888;</span><div><div class="alert-banner-text">Kritieke waarde: hs-TnT ${troponin.peak} ng/L — 1-jr MACE 40,6% (Mol 2024)</div><div class="text-sm" style="margin-top:2px;"><button class="btn btn-ghost btn-sm" onclick="navigate('alerts')">Open Alert-engine &rarr;</button></div></div></div>`;
+      } else if (troponin.peak !== null && troponin.peak >= 50) {
+        alertEl.style.display = 'block';
+        alertEl.innerHTML = `<div class="alert-banner orange" style="margin:0;"><span class="alert-banner-icon">&#9888;</span><div><div class="alert-banner-text">Verhoogde waarde: hs-TnT ${troponin.peak} ng/L — serieel patroon bepaalt MINS-classificatie</div><div class="text-sm" style="margin-top:2px;"><button class="btn btn-ghost btn-sm" onclick="navigate('alerts')">Open Alert-engine &rarr;</button></div></div></div>`;
+      } else if (troponin.peak !== null && troponin.peak >= 14) {
+        alertEl.style.display = 'block';
+        alertEl.innerHTML = `<div class="alert-banner amber" style="margin:0;"><span class="alert-banner-icon">&#9888;</span><div><div class="alert-banner-text">Aandacht: hs-TnT ${troponin.peak} ng/L — herhaling vereist om MINS uit te sluiten</div></div></div>`;
+      } else {
+        alertEl.style.display = 'none';
+      }
+    }
   },
 
   renderMonitoring(p) {
@@ -2553,6 +2593,18 @@ function loadDemo(id) {
 // ============================================================
 // UTILITIES
 // ============================================================
+
+function printSummary() {
+  const text = document.getElementById('summary-text').textContent;
+  if (!text || text.startsWith('Geen patiënt')) {
+    showToast('Geen samenvatting beschikbaar — selecteer eerst een patiënt', true);
+    return;
+  }
+  const frame = document.getElementById('print-frame');
+  frame.textContent = text;
+  window.print();
+  frame.textContent = '';
+}
 
 function copySummary(btn) {
   const text = document.getElementById('summary-text').textContent;
