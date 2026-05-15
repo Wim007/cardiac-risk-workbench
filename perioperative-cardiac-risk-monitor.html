@@ -893,6 +893,7 @@
 
     <!-- DASHBOARD -->
     <div class="view active" id="view-dashboard">
+      <div id="session-restore-banner" style="display:none;background:var(--teal-light);border:1px solid var(--teal);border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:13px;color:var(--teal-dark);"></div>
       <div class="stats-row">
         <div class="stat-card">
           <div class="stat-value" id="stat-total">0</div>
@@ -1584,7 +1585,11 @@ const RuleEngine = {
     // MINS delta criterion: ≥20% rise above preop baseline AND postop value ≥14 ng/L
     // Thygesen 2018 / VISION / Mol 2024, H2
     const preop = patient.labValues?.preOpTroponin;
-    if (preop !== null && preop !== undefined && preop > 0) {
+    const preopMissing = preop === null || preop === undefined || preop === '' || preop === 0;
+    if (preopMissing && presentValues.length > 0) {
+      flags.push('WAARSCHUWING: Preop hs-TnT baseline ontbreekt — MINS-criterium (≥20% stijging) kan NIET worden berekend. Voer preop baseline in voor betrouwbare MINS-detectie (Thygesen 2018)');
+    }
+    if (!preopMissing) {
       monDays.forEach((dayData, idx) => {
         const val = dayData?.troponin;
         if (val !== null && val !== undefined && val !== '') {
@@ -1857,9 +1862,39 @@ const AppState = {
     const existing = this.sessionPatients.findIndex(x => x.id === p.id);
     if (existing >= 0) this.sessionPatients[existing] = JSON.parse(JSON.stringify(p));
     else this.sessionPatients.push(JSON.parse(JSON.stringify(p)));
+    this._saveToStorage();
   },
 
-  getPatient() { return this.currentPatient; }
+  getPatient() { return this.currentPatient; },
+
+  _saveToStorage() {
+    try {
+      localStorage.setItem('crm_session_patients', JSON.stringify(this.sessionPatients));
+      if (this.currentPatient) localStorage.setItem('crm_current_patient_id', this.currentPatient.id);
+    } catch (e) { /* storage quota exceeded or private mode */ }
+  },
+
+  _loadFromStorage() {
+    try {
+      const saved = localStorage.getItem('crm_session_patients');
+      if (saved) {
+        this.sessionPatients = JSON.parse(saved);
+        const currentId = localStorage.getItem('crm_current_patient_id');
+        if (currentId) {
+          const found = this.sessionPatients.find(p => p.id === currentId);
+          if (found) this.currentPatient = JSON.parse(JSON.stringify(found));
+        }
+        return true;
+      }
+    } catch (e) { /* corrupt storage */ }
+    return false;
+  },
+
+  clearStorage() {
+    try { localStorage.removeItem('crm_session_patients'); localStorage.removeItem('crm_current_patient_id'); } catch (e) {}
+    this.sessionPatients = [];
+    this.currentPatient = null;
+  }
 };
 
 // ============================================================
@@ -2316,11 +2351,11 @@ function navigate(viewId, navEl) {
   const view = document.getElementById('view-' + viewId);
   if (view) view.classList.add('active');
 
-  if (navEl) navEl.classList.add('active');
-  else {
-    const el = document.querySelector(`.nav-item[data-view="${viewId}"]`);
-    if (el) el.classList.add('active');
-  }
+  // Always set active by data-view attribute for reliability
+  const navByView = document.querySelector(`.nav-item[data-view="${viewId}"]`);
+  if (navByView) navByView.classList.add('active');
+
+  window.scrollTo(0, 0);
 
   UI.updateTopbar(viewId);
 
@@ -2807,9 +2842,20 @@ document.getElementById('demo-modal').addEventListener('click', function(e) {
 // ============================================================
 
 (function init() {
-  DemoRepository.all().forEach(p => AppState.sessionPatients.push(p));
-  // Set casus 3 (high risk) as the default active patient
-  AppState.currentPatient = JSON.parse(JSON.stringify(AppState.sessionPatients[2]));
+  const restored = AppState._loadFromStorage();
+  if (restored && AppState.sessionPatients.length > 0) {
+    // Herstel sessie uit vorige browser-sessie
+    const banner = document.getElementById('session-restore-banner');
+    if (banner) {
+      banner.textContent = `Sessie hersteld: ${AppState.sessionPatients.length} patiënt(en) uit vorige sessie geladen.`;
+      banner.style.display = 'block';
+      setTimeout(() => { banner.style.display = 'none'; }, 4000);
+    }
+  } else {
+    // Geen opgeslagen sessie — laad demo-casussen
+    DemoRepository.all().forEach(p => AppState.sessionPatients.push(p));
+    AppState.currentPatient = JSON.parse(JSON.stringify(AppState.sessionPatients[2]));
+  }
   UI.renderDashboard();
 })();
 </script>
