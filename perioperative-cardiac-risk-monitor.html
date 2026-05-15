@@ -1163,6 +1163,7 @@
         <p class="text-sm text-muted mb-16">
           Voer hs-TnT waarden in per postoperatieve dag. Drempelwaarden: 0–13 ng/L normaal · 14–49 aandacht · 50–149 relevant · ≥150 zeer hoog.
         </p>
+        <div id="troponin-chart" style="margin-bottom:20px;"></div>
         <!-- FHIR: Observation (hs-TnT) resources per day -->
         <div class="timeline-grid" id="troponin-timeline">
           <!-- rendered by JS -->
@@ -1985,6 +1986,127 @@ const UI = {
     document.getElementById('l-creat').value = p.labValues.creatinine !== null ? p.labValues.creatinine : '';
   },
 
+  renderTroponinChart(p, n) {
+    const el = document.getElementById('troponin-chart');
+    if (!el) return;
+
+    const days = (p.monitoring.days || []).slice(0, n);
+    const preop = p.labValues?.preOpTroponin;
+    const hasPreop = preop !== null && preop !== undefined && preop !== '' && Number(preop) > 0;
+
+    // Collect present values with their day index
+    const points = days
+      .map((d, i) => ({ i, v: (d.troponin !== null && d.troponin !== undefined && d.troponin !== '') ? Number(d.troponin) : null }))
+      .filter(pt => pt.v !== null);
+
+    if (points.length === 0) {
+      el.innerHTML = '<div class="text-sm text-muted" style="padding:8px 0;">Nog geen troponinewaarden ingevoerd — grafiek verschijnt na eerste invoer.</div>';
+      return;
+    }
+
+    // SVG dimensions
+    const W = 680, H = 200;
+    const padL = 52, padR = 24, padT = 18, padB = 36;
+    const chartW = W - padL - padR;
+    const chartH = H - padT - padB;
+
+    // Y scale: 0 to max(150, peak * 1.15), nice round ceiling
+    const peak = Math.max(...points.map(pt => pt.v), hasPreop ? Number(preop) : 0);
+    const yMax = Math.max(160, Math.ceil(peak * 1.2 / 10) * 10);
+
+    const toY = v => padT + chartH - (v / yMax) * chartH;
+    const totalDays = n;
+    const toX = i => padL + (totalDays <= 1 ? chartW / 2 : (i / (totalDays - 1)) * chartW);
+
+    // Color zones (horizontal bands)
+    const zones = [
+      { y1: 0, y2: 14, fill: '#f0fdf4' },
+      { y1: 14, y2: 50, fill: '#fefce8' },
+      { y1: 50, y2: 150, fill: '#fff7ed' },
+      { y1: 150, y2: yMax, fill: '#fef2f2' },
+    ];
+
+    let svg = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:${H}px;display:block;font-family:inherit;">`;
+
+    // Zone backgrounds
+    zones.forEach(z => {
+      const y1 = Math.min(toY(z.y1), toY(z.y2));
+      const y2 = Math.max(toY(z.y1), toY(z.y2));
+      const clampY1 = Math.max(padT, Math.min(y1, padT + chartH));
+      const clampY2 = Math.max(padT, Math.min(y2, padT + chartH));
+      if (clampY2 > clampY1)
+        svg += `<rect x="${padL}" y="${clampY1}" width="${chartW}" height="${clampY2 - clampY1}" fill="${z.fill}"/>`;
+    });
+
+    // Threshold lines
+    [14, 50, 150].forEach(thresh => {
+      if (thresh <= yMax) {
+        const y = toY(thresh);
+        const colors = { 14: '#ca8a04', 50: '#ea580c', 150: '#dc2626' };
+        svg += `<line x1="${padL}" y1="${y}" x2="${padL + chartW}" y2="${y}" stroke="${colors[thresh]}" stroke-width="1" stroke-dasharray="4,3" opacity="0.6"/>`;
+        svg += `<text x="${padL - 4}" y="${y + 4}" text-anchor="end" font-size="9" fill="${colors[thresh]}" opacity="0.8">${thresh}</text>`;
+      }
+    });
+
+    // Preop baseline reference line
+    if (hasPreop) {
+      const preopNum = Number(preop);
+      const y = toY(preopNum);
+      svg += `<line x1="${padL}" y1="${y}" x2="${padL + chartW}" y2="${y}" stroke="#0d9488" stroke-width="1.5" stroke-dasharray="6,4" opacity="0.7"/>`;
+      svg += `<text x="${padL + chartW + 3}" y="${y + 4}" font-size="9" fill="#0d9488">preop ${preopNum}</text>`;
+
+      // MINS threshold (baseline + 20%)
+      const minsThresh = preopNum * 1.2;
+      if (minsThresh >= 14 && minsThresh <= yMax) {
+        const ym = toY(minsThresh);
+        svg += `<line x1="${padL}" y1="${ym}" x2="${padL + chartW}" y2="${ym}" stroke="#f97316" stroke-width="1" stroke-dasharray="3,3" opacity="0.6"/>`;
+        svg += `<text x="${padL + 4}" y="${ym - 3}" font-size="9" fill="#f97316" opacity="0.85">MINS-drempel (+20%)</text>`;
+      }
+    }
+
+    // Data line
+    const linePoints = points.map(pt => `${toX(pt.i)},${toY(pt.v)}`).join(' ');
+    if (points.length > 1)
+      svg += `<polyline points="${linePoints}" fill="none" stroke="#0d9488" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+
+    // Data points + labels
+    points.forEach(pt => {
+      const cx = toX(pt.i);
+      const cy = toY(pt.v);
+      const dotColor = pt.v >= 150 ? '#dc2626' : pt.v >= 50 ? '#ea580c' : pt.v >= 14 ? '#ca8a04' : '#16a34a';
+      svg += `<circle cx="${cx}" cy="${cy}" r="5" fill="${dotColor}" stroke="#fff" stroke-width="1.5"/>`;
+      const labelY = cy > padT + 18 ? cy - 9 : cy + 16;
+      svg += `<text x="${cx}" y="${labelY}" text-anchor="middle" font-size="10" font-weight="600" fill="${dotColor}">${pt.v}</text>`;
+    });
+
+    // X-axis day labels
+    for (let i = 0; i < totalDays; i++) {
+      const x = toX(i);
+      const label = i === 0 ? 'D0' : `D${i}`;
+      svg += `<text x="${x}" y="${padT + chartH + 14}" text-anchor="middle" font-size="10" fill="#64748b">${label}</text>`;
+    }
+
+    // Y-axis label
+    svg += `<text x="${padL - 38}" y="${padT + chartH / 2}" text-anchor="middle" font-size="10" fill="#64748b" transform="rotate(-90,${padL - 38},${padT + chartH / 2})">hs-TnT (ng/L)</text>`;
+
+    // Legend
+    const legendItems = [
+      { color: '#0d9488', dash: '6,4', label: 'Preop baseline' },
+      { color: '#f97316', dash: '3,3', label: 'MINS-drempel (+20%)' },
+    ];
+    if (hasPreop) {
+      let lx = padL;
+      legendItems.forEach(item => {
+        svg += `<line x1="${lx}" y1="${H - 6}" x2="${lx + 18}" y2="${H - 6}" stroke="${item.color}" stroke-width="1.5" stroke-dasharray="${item.dash}"/>`;
+        svg += `<text x="${lx + 22}" y="${H - 2}" font-size="9" fill="#64748b">${item.label}</text>`;
+        lx += 120;
+      });
+    }
+
+    svg += '</svg>';
+    el.innerHTML = svg;
+  },
+
   renderMonitoring(p) {
     // Dynamic monitoring: 1–30 days configured per patient
     const n = p.monitoring.monitoringDays || 3;
@@ -2030,6 +2152,8 @@ const UI = {
       if (num < 150) return { mace: '10.4%', mort: null, label: 'Mol 2024, H6' };
       return { mace: '40.6%', mort: '46.5%', label: 'Mol 2024, H6' };
     };
+
+    this.renderTroponinChart(p, n);
 
     document.getElementById('troponin-timeline').innerHTML = p.monitoring.days.slice(0, n).map((data, i) => {
       const tn = data.troponin;
